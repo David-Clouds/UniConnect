@@ -1,49 +1,72 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - UniConnect</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/UniConnect.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">UniConnect</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                @await Html.PartialAsync("_UsmpShield")
+                <div>
+                    <p class="sidebar-title">UniConnect</p>
+                    <p class="sidebar-subtitle">USMP · Plataforma</p>
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - UniConnect - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <nav class="sidebar-nav">
+                <p class="sidebar-section-label">Navegación</p>
+                <a class="nav-item @(ViewBag.Active == "home" ? "active" : "")" asp-controller="Eventos" asp-action="Index">
+                    <span>🏠</span> Inicio
+                </a>
+                <a class="nav-item nav-item-teal @(ViewBag.Active == "joinus" ? "active" : "")" asp-controller="Comunidad" asp-action="Index">
+                    <span>🤝</span> Join Us <span class="badge-impacto">Impacto</span>
+                </a>
+                <a class="nav-item @(ViewBag.Active == "ticket" ? "active" : "")" asp-controller="Eventos" asp-action="MisTickets">
+                    <span>🎟️</span> Mis Tickets
+                </a>
+                <a class="nav-item @(ViewBag.Active == "organizer" ? "active" : "")" asp-controller="Organizador" asp-action="Panel">
+                    <span>📊</span> Panel Organizador
+                </a>
+                <a class="nav-item @(ViewBag.Active == "profile" ? "active" : "")" asp-controller="Perfil" asp-action="Index">
+                    <span>👤</span> Mi Perfil
+                </a>
+            </nav>
+
+            <div class="sidebar-user">
+                <a asp-controller="Perfil" asp-action="Index" class="user-card">
+                    <div class="user-avatar">AS</div>
+                    <div>
+                        <p class="user-name">Ana Sofía R.</p>
+                        <p class="user-role">Ing. Sistemas · 6to sem.</p>
+                    </div>
+                </a>
+                <a asp-controller="Cuenta" asp-action="Login" class="logout-link">↩ Cerrar sesión</a>
+            </div>
+        </aside>
+
+        <div class="main-area">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <h1>@ViewData["Title"]</h1>
+                    @if (ViewData["Subtitle"] != null)
+                    {
+                        <p>@ViewData["Subtitle"]</p>
+                    }
+                </div>
+                <input type="text" class="search-input" placeholder="Buscar eventos..." />
+                <div class="user-avatar small">AS</div>
+            </header>
+            <main class="content">
+                @RenderBody()
+            </main>
         </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    </div>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

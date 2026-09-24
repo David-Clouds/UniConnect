@@ -1,0 +1,36 @@
+@model UniConnect.Models.Evento
+@{
+    ViewData["Title"] = Model.Titulo;
+    ViewData["Subtitle"] = Model.Categoria;
+}
+
+<a href="@Url.Action("Index", "Eventos")" class="back-link">← Volver a eventos</a>
+
+<div class="detail-hero" style="background-image:url('@Model.ImagenUrl')"></div>
+
+<div class="detail-body">
+    <span class="badge-categoria">@Model.Categoria</span>
+    <h1 class="detail-title">@Model.Titulo</h1>
+
+    <div class="detail-meta">
+        <span>📅 @Model.Fecha.ToString("dddd d MMMM yyyy")</span>
+        <span>🕒 @Model.Fecha.ToString("hh:mm tt")</span>
+        <span>🏛️ Organiza: @Model.Organizador.Nombre</span>
+    </div>
+
+    <p class="detail-description">@Model.Descripcion</p>
+
+    <div class="detail-action-bar">
+        <div class="detail-price">
+            @(Model.Precio == 0 ? "Gratis" : $"S/ {Model.Precio}")
+        </div>
+        @if (Model.Precio == 0)
+        {
+            <button class="btn-primary">Registrarme</button>
+        }
+        else
+        {
+            <a href="@Url.Action("Checkout", "Eventos", new { id = Model.Id })" class="btn-primary">Comprar ticket</a>
+        }
+    </div>
+</div>
