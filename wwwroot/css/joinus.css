@@ -1,0 +1,121 @@
+/* Join Us — usa las variables globales de site.css */
+
+/* Color por tipo de apoyo */
+.tipo-todos        { --tipo: var(--join-teal); --tipo-light: var(--join-teal-light); }
+.tipo-voluntariado { --tipo: #0D9488; --tipo-light: #F0FDFA; }
+.tipo-comunidad    { --tipo: #2563EB; --tipo-light: #EFF6FF; }
+.tipo-causa        { --tipo: #9333EA; --tipo-light: #FAF5FF; }
+
+/* Hero */
+.join-hero {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px;
+  padding: 32px; margin-bottom: 24px; border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--join-teal) 0%, var(--join-teal-dark) 100%);
+  color: #fff;
+}
+.join-hero-text { max-width: 560px; }
+.join-hero-kicker {
+  display: inline-block; font-size: 12px; font-weight: 600;
+  background: rgba(255,255,255,0.16); padding: 4px 10px; border-radius: 999px; margin-bottom: 12px;
+}
+.join-hero-title { font-family: 'Poppins', sans-serif; font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+.join-hero-sub { font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.85); margin: 0; }
+.join-stats { display: flex; gap: 12px; }
+.join-stat {
+  display: flex; flex-direction: column; min-width: 96px;
+  padding: 12px 16px; border-radius: 12px; background: rgba(255,255,255,0.12);
+}
+.join-stat-value { font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 700; }
+.join-stat-label { font-size: 12px; color: rgba(255,255,255,0.75); }
+
+/* Tabs */
+.join-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+.join-tab {
+  padding: 10px 16px; margin-bottom: -1px;
+  font-size: 14px; font-weight: 500; color: var(--text-2); text-decoration: none;
+  border-bottom: 2.5px solid transparent;
+}
+.join-tab:hover { color: var(--tipo); }
+.join-tab.active { color: var(--tipo); border-bottom-color: var(--tipo); font-weight: 600; }
+
+/* Grid de tarjetas */
+.join-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.join-card {
+  display: flex; flex-direction: column; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+  text-decoration: none; transition: box-shadow .15s, transform .15s;
+}
+.join-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.10); transform: translateY(-2px); }
+.join-card-img {
+  position: relative; height: 150px;
+  background-size: cover; background-position: center; background-color: var(--bg);
+}
+.join-badge {
+  position: absolute; top: 12px; left: 12px;
+  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+  background: var(--tipo); color: #fff;
+}
+.join-card-body { display: flex; flex-direction: column; flex: 1; padding: 16px; }
+.join-card-title { font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 600; color: var(--text-1); margin: 0 0 2px; }
+.join-card-org { font-size: 12px; font-weight: 500; color: var(--tipo); margin: 0 0 8px; }
+.join-card-desc { font-size: 13px; line-height: 1.5; color: var(--text-2); margin: 0 0 12px; }
+.join-card-meta { font-size: 12px; color: var(--text-3); margin: 0 0 4px; }
+.join-card-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border);
+}
+.join-card-members { font-size: 12px; font-weight: 600; color: var(--text-1); }
+.join-card-cta { font-size: 12px; font-weight: 600; color: var(--tipo); }
+
+/* Detalle */
+.join-detail { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+.join-detail-hero {
+  position: relative; height: 280px; border-radius: var(--radius); margin-bottom: 20px;
+  background-size: cover; background-position: center; background-color: var(--bg);
+}
+.join-detail-hero .join-badge { top: 16px; left: 16px; font-size: 12px; }
+.join-detail-org { font-size: 14px; color: var(--text-2); margin: -4px 0 20px; }
+.join-detail-org strong { color: var(--tipo); }
+
+.join-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.join-info {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  font-size: 14px; font-weight: 600; color: var(--text-1);
+}
+.join-info-label { font-size: 12px; font-weight: 500; color: var(--text-3); }
+
+.join-impact {
+  display: flex; align-items: center; gap: 16px; padding: 18px 20px; margin-bottom: 24px;
+  border-radius: var(--radius); background: var(--tipo-light); border-left: 4px solid var(--tipo);
+}
+.join-impact-icon { font-size: 28px; }
+.join-impact-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--tipo); margin: 0 0 2px; }
+.join-impact-text { font-size: 15px; font-weight: 600; color: var(--text-1); margin: 0; }
+
+.join-section-title { font-family: 'Poppins', sans-serif; font-size: 17px; font-weight: 600; color: var(--text-1); margin: 0 0 8px; }
+.join-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.join-tag { font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 999px; background: var(--tipo-light); color: var(--tipo); }
+
+/* Tarjeta lateral de inscripción */
+.join-side { position: sticky; top: 88px; }
+.join-side-card { padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.join-side-members { font-size: 14px; color: var(--text-2); margin: 0 0 12px; }
+.join-side-members strong { font-family: 'Poppins', sans-serif; font-size: 24px; color: var(--tipo); margin-right: 4px; }
+.join-side-list { list-style: none; padding: 0; margin: 0 0 16px; font-size: 13px; color: var(--text-2); }
+.join-side-list li { padding: 6px 0; border-bottom: 1px solid var(--border); }
+.join-btn {
+  width: 100%; padding: 12px; border: none; border-radius: 12px; cursor: pointer;
+  background: var(--tipo); color: #fff; font-size: 14px; font-weight: 600;
+}
+.join-btn:hover { filter: brightness(0.92); }
+.join-success {
+  padding: 12px; border-radius: 12px; text-align: center;
+  background: var(--tipo-light); color: var(--tipo); font-size: 14px; font-weight: 700;
+}
+.join-side-note { font-size: 12px; color: var(--text-3); text-align: center; margin: 10px 0 0; }
+
+@media (max-width: 900px) {
+  .join-detail { grid-template-columns: 1fr; }
+  .join-side { position: static; }
+}
