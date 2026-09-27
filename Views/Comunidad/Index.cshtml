@@ -1,0 +1,79 @@
+@model List<UniConnect.Models.Comunidad>
+@{
+    ViewData["Title"] = "Join Us";
+    ViewData["Subtitle"] = "Voluntariados, comunidades y causas solidarias";
+    var tipos = (string[])ViewBag.Tipos;
+    var tipoSel = (string)ViewBag.TipoSeleccionado;
+
+    string ClaseTipo(string tipo) => tipo switch
+    {
+        "Voluntariado" => "tipo-voluntariado",
+        "Comunidad" => "tipo-comunidad",
+        "Causa solidaria" => "tipo-causa",
+        _ => "tipo-todos"
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/joinus.css" asp-append-version="true" />
+}
+
+<section class="join-hero">
+    <div class="join-hero-text">
+        <span class="join-hero-kicker">🤝 Join Us · Impacto USMP</span>
+        <h2 class="join-hero-title">Súmate y genera impacto real</h2>
+        <p class="join-hero-sub">Encuentra voluntariados, comunidades estudiantiles y causas solidarias donde tu tiempo y talento hacen la diferencia.</p>
+    </div>
+    <div class="join-stats">
+        <div class="join-stat">
+            <span class="join-stat-value">@ViewBag.TotalIniciativas</span>
+            <span class="join-stat-label">Iniciativas</span>
+        </div>
+        <div class="join-stat">
+            <span class="join-stat-value">@(((int)ViewBag.TotalMiembros).ToString("N0"))</span>
+            <span class="join-stat-label">Miembros</span>
+        </div>
+        <div class="join-stat">
+            <span class="join-stat-value">@ViewBag.TotalVoluntariados</span>
+            <span class="join-stat-label">Voluntariados</span>
+        </div>
+    </div>
+</section>
+
+<nav class="join-tabs">
+    @foreach (var t in tipos)
+    {
+        var active = t == tipoSel ? "active" : "";
+        <a class="join-tab @ClaseTipo(t) @active"
+           asp-action="Index" asp-route-tipo="@(t == "Todos" ? null : t)">@t</a>
+    }
+</nav>
+
+<div class="join-grid">
+    @if (!Model.Any())
+    {
+        <p class="empty-state">Todavía no hay iniciativas de este tipo.</p>
+    }
+    @foreach (var c in Model)
+    {
+        <a asp-action="Detalle" asp-route-id="@c.Id" class="join-card @ClaseTipo(c.TipoApoyo)">
+            <div class="join-card-img" style="background-image:url('@c.ImagenUrl')">
+                <span class="join-badge">@c.TipoApoyo</span>
+            </div>
+            <div class="join-card-body">
+                <h3 class="join-card-title">@c.Nombre</h3>
+                <p class="join-card-org">@c.Organizacion</p>
+                <p class="join-card-desc">@c.Descripcion</p>
+                <p class="join-card-meta">📍 @c.Ubicacion</p>
+                @if (!string.IsNullOrEmpty(c.Frecuencia))
+                {
+                    <p class="join-card-meta">🗓️ @c.Frecuencia</p>
+                }
+                <div class="join-card-footer">
+                    <span class="join-card-members">👥 @c.Miembros miembros</span>
+                    <span class="join-card-cta">Ver más →</span>
+                </div>
+            </div>
+        </a>
+    }
+</div>
