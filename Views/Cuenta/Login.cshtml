@@ -1,0 +1,116 @@
+@model UniConnect.Models.ViewModels.LoginViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar sesión - UniConnect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
+</head>
+<body class="login-body">
+    <div class="login-page">
+
+        <!-- Fondo USMP + viñeta suave -->
+        <div class="login-bg"></div>
+        <div class="login-vignette"></div>
+
+        <!-- Estadísticas flotantes (arriba a la izquierda) -->
+        <div class="login-stats">
+            <div class="glass-pill"><span>🎓</span> 8,500+ estudiantes activos</div>
+            <div class="glass-pill"><span>📅</span> 200+ eventos por mes</div>
+            <div class="glass-pill"><span>🤝</span> 40+ comunidades USMP</div>
+        </div>
+
+        <!-- Lema (abajo a la izquierda) -->
+        <div class="login-tagline">
+            <p class="tagline-title">Vive tu universidad<br /><span>más allá de las aulas.</span></p>
+            <p class="tagline-sub">Conecta · Participa · Crea oportunidades</p>
+        </div>
+
+        <!-- Testimonio (abajo a la derecha) -->
+        <div class="login-testimonial">
+            <div class="glass-box">
+                <div class="stars">
+                    @for (var i = 0; i < 5; i++)
+                    {
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                    }
+                </div>
+                <p class="testimonial-text">"UniConnect me ayudó a encontrar mi primera práctica pre-profesional y hacer networking real dentro del campus."</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">MR</div>
+                    <div>
+                        <p class="author-name">Marco R.</p>
+                        <p class="author-role">Ing. Industrial · 4to año</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta central -->
+        <div class="login-center">
+            <div class="login-brand">
+                <div class="login-shield">
+                    @await Html.PartialAsync("_UsmpShield")
+                </div>
+                <p class="brand-name">UniConnect</p>
+                <p class="brand-sub">Universidad de San Martín de Porres</p>
+            </div>
+
+            <div class="glass-card">
+                <h2 class="card-title">¡Bienvenido de vuelta!</h2>
+                <p class="card-sub">Ingresa con tu correo USMP</p>
+
+                <form asp-controller="Cuenta" asp-action="Login" method="post" id="login-form" novalidate>
+                    <input type="hidden" asp-for="ReturnUrl" />
+
+                    <div asp-validation-summary="ModelOnly" class="login-alert"></div>
+
+                    <div class="field">
+                        <input asp-for="Correo" type="email" class="login-input"
+                               placeholder="Correo universitario (nombre@usmp.pe)" autocomplete="username" autofocus />
+                        <span asp-validation-for="Correo" class="field-error"></span>
+                    </div>
+
+                    <div class="field">
+                        <input asp-for="Password" type="password" class="login-input"
+                               placeholder="Contraseña" autocomplete="current-password" />
+                        <span asp-validation-for="Password" class="field-error"></span>
+                    </div>
+
+                    <div class="forgot">
+                        <a href="#">¿Olvidaste tu contraseña?</a>
+                    </div>
+
+                    <button type="submit" class="login-btn" id="login-btn">
+                        <span class="btn-label">Iniciar sesión</span>
+                        <span class="btn-loading">
+                            <svg class="spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25" /><path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                            Procesando...
+                        </span>
+                    </button>
+                </form>
+            </div>
+
+            <p class="login-footer">Exclusivo para la comunidad USMP · Todos los derechos reservados</p>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var form = document.getElementById('login-form');
+            var btn = document.getElementById('login-btn');
+            if (!form || !btn) return;
+            form.addEventListener('submit', function () {
+                btn.classList.add('is-loading');
+                btn.disabled = true;
+            });
+        })();
+    </script>
+</body>
+</html>
