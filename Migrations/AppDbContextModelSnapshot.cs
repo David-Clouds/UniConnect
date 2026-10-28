@@ -27,14 +27,40 @@ namespace UniConnect.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("DescripcionLarga")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Duracion")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Frecuencia")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ImagenUrl")
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("Impacto")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Miembros")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Organizacion")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Tags")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("TipoApoyo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Ubicacion")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
