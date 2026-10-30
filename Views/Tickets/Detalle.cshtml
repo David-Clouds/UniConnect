@@ -1,0 +1,34 @@
+@model UniConnect.ViewModels.TicketDetalleViewModel
+@{
+    ViewData["Title"] = "Detalle del ticket";
+    ViewData["Subtitle"] = "Mis Tickets";
+    var cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+}
+<section class="tickets-page">
+    <a class="back-link" href="/Eventos/MisTickets">← Volver a Mis Tickets</a>
+    <article class="ticket-digital" aria-labelledby="ticket-title">
+        <header class="ticket-digital-header">
+            <div class="ticket-brand">@await Html.PartialAsync("_UsmpShield")<span>UniConnect · USMP</span></div>
+            <p>Tu ticket digital</p>
+            <h2 id="ticket-title">@Model.Titulo</h2>
+        </header>
+        <div class="ticket-perforation" aria-hidden="true"></div>
+        <div class="ticket-digital-body">
+            <dl class="ticket-fields">
+                <div><dt>Fecha</dt><dd>@Model.FechaEvento.ToString("d MMM yyyy", cultura)</dd></div>
+                <div><dt>Hora</dt><dd>@Model.FechaEvento.ToString("HH:mm", cultura)</dd></div>
+                <div class="ticket-field-wide"><dt>Organizador</dt><dd>@Model.Organizador</dd></div>
+                <div class="ticket-field-wide"><dt>Fecha de emisión</dt><dd>@Model.FechaCompra.ToString("d MMM yyyy HH:mm", cultura)</dd></div>
+            </dl>
+            <div class="ticket-qr-area">
+                <div class="ticket-qr-placeholder ticket-qr-large">QR no disponible</div>
+                <p>La visualización del código QR estará disponible cuando se integre su generación segura.</p>
+                <span class="ticket-number">Ticket #@Model.Id</span>
+            </div>
+            <a class="btn-primary ticket-return" href="/Eventos/MisTickets">Ver mis tickets</a>
+        </div>
+    </article>
+</section>
