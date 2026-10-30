@@ -4,7 +4,9 @@
     ViewData["Subtitle"] = "Mis Tickets";
     var cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
 }
-<link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+@section Styles {
+    <link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+}
 <section class="tickets-page">
     <a class="back-link" href="/Eventos/MisTickets">← Volver a Mis Tickets</a>
     <article class="ticket-digital" aria-labelledby="ticket-title">

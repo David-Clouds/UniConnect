@@ -12,10 +12,33 @@ public class TicketsController : Controller
 
     public TicketsController(AppDbContext context) => _context = context;
 
-    // Integration point for the authentication module. Do not infer database IDs
-    // from an arbitrary claim, session value, URL or form. Until the trusted
-    // identity-to-Estudiante mapping is agreed and implemented, access stays closed.
-    private int? ObtenerEstudianteVerificado() => null;
+    private async Task<int?> ObtenerEstudianteVerificadoAsync(CancellationToken cancellationToken)
+    {
+        await HttpContext.Session.LoadAsync(cancellationToken);
+        // CuentaController stores this server-side value with SetInt32.
+        // Check the encoded length before GetInt32 to reject malformed values.
+        if (!HttpContext.Session.TryGetValue(CuentaController.SesionEstudianteId, out var valor)
+            || valor.Length != sizeof(int))
+            return null;
+
+        var estudianteId = HttpContext.Session.GetInt32(CuentaController.SesionEstudianteId);
+        if (estudianteId is not > 0) return null;
+
+        return await _context.Estudiantes.AsNoTracking()
+            .AnyAsync(e => e.Id == estudianteId.Value, cancellationToken)
+            ? estudianteId : null;
+    }
+
+    private IActionResult IrAlLogin(int? ticketId = null)
+    {
+        // Generate the return path from our own routes, never from browser input.
+        var retorno = ticketId.HasValue
+            ? Url.Action(nameof(Detalle), "Tickets", new { id = ticketId.Value })
+            : Url.Action(nameof(Index), "Tickets");
+        if (retorno is null || !Url.IsLocalUrl(retorno))
+            retorno = Url.Content("~/Eventos/MisTickets");
+        return RedirectToAction(nameof(CuentaController.Login), "Cuenta", new { returnUrl = retorno });
+    }
 
     private IQueryable<TicketDetalleViewModel> TicketsDelEstudiante(int estudianteId) =>
         _context.Tickets.AsNoTracking()
@@ -36,12 +59,8 @@ public class TicketsController : Controller
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
         ViewBag.Active = "ticket";
-        var estudianteId = ObtenerEstudianteVerificado();
-        if (User.Identity?.IsAuthenticated != true || estudianteId is null)
-        {
-            Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return View(new MisTicketsViewModel());
-        }
+        var estudianteId = await ObtenerEstudianteVerificadoAsync(cancellationToken);
+        if (estudianteId is null) return IrAlLogin();
 
         var tickets = await TicketsDelEstudiante(estudianteId.Value)
             .OrderByDescending(t => t.FechaEvento).ThenByDescending(t => t.Id)
@@ -62,12 +81,9 @@ public class TicketsController : Controller
     public async Task<IActionResult> Detalle(int id, CancellationToken cancellationToken)
     {
         ViewBag.Active = "ticket";
-        var estudianteId = ObtenerEstudianteVerificado();
-        if (User.Identity?.IsAuthenticated != true || estudianteId is null)
-        {
-            Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return View("Index", new MisTicketsViewModel());
-        }
+        if (!ModelState.IsValid || id <= 0) return NotFound();
+        var estudianteId = await ObtenerEstudianteVerificadoAsync(cancellationToken);
+        if (estudianteId is null) return IrAlLogin(id);
 
         var ticket = await TicketsDelEstudiante(estudianteId.Value)
             .SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
