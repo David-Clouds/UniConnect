@@ -1,0 +1,109 @@
+@model UniConnect.ViewModels.PanelOrganizadorViewModel
+@{
+    ViewData["Title"] = "Panel del Organizador";
+    ViewData["Subtitle"] = "Gestiona la información de tus eventos, tickets y participantes";
+    var cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
+    var maximo = Math.Max(1, Model.EmisionesDiarias.Select(d => d.Cantidad).DefaultIfEmpty(0).Max());
+    var indicadores = new[] {
+        (Etiqueta: "Eventos registrados", Valor: Model.TotalEventos, Icono: "📅", Estilo: "red"),
+        (Etiqueta: "Tickets emitidos", Valor: Model.TotalTickets, Icono: "🎟", Estilo: "green"),
+        (Etiqueta: "Participantes únicos", Valor: Model.ParticipantesUnicos, Icono: "👥", Estilo: "blue"),
+        (Etiqueta: "Eventos próximos", Valor: Model.EventosProximos, Icono: "📆", Estilo: "amber")
+    };
+}
+<link rel="stylesheet" href="~/css/organizador.css" asp-append-version="true" />
+<section class="organizador-page" aria-label="Panel del Organizador">
+    @if (!Model.AccesoDisponible)
+    {
+        <div class="organizador-access" role="status">
+            <h2>Necesitas una sesión de organizador verificada</h2>
+            <p>El acceso a tus eventos y participantes estará disponible cuando se integre el inicio de sesión de organizadores.</p>
+            <p>No se han consultado datos privados.</p>
+        </div>
+    }
+    <div class="organizador-stats" aria-label="Indicadores del organizador">
+        @foreach (var indicador in indicadores)
+        {
+            <div class="organizador-stat organizador-stat-@indicador.Estilo">
+                <div><span>@indicador.Etiqueta</span><span aria-hidden="true">@indicador.Icono</span></div>
+                <strong>@(Model.AccesoDisponible ? indicador.Valor.ToString("N0", cultura) : "—")</strong>
+                @if (!Model.AccesoDisponible) { <small>Acceso pendiente</small> }
+            </div>
+        }
+    </div>
+    <section class="organizador-surface" aria-labelledby="emisiones-heading">
+        <div class="organizador-section-header">
+            <div><h2 id="emisiones-heading">Tickets emitidos en los últimos 7 días</h2><p>Cantidad diaria según la fecha de adquisición</p></div>
+            <div class="organizador-create"><button type="button" class="btn-primary" disabled aria-describedby="crear-pendiente">+ Crear evento</button><small id="crear-pendiente">Pendiente de habilitación</small></div>
+        </div>
+        @if (!Model.AccesoDisponible)
+        {
+            <p class="organizador-empty">El gráfico requiere una sesión verificada.</p>
+        }
+        else
+        {
+            @if (Model.EmisionesDiarias.All(d => d.Cantidad == 0))
+            { <p class="organizador-muted">No se emitieron tickets en este período.</p> }
+            <div class="organizador-chart" role="list" aria-label="Tickets emitidos por día">
+                @foreach (var dia in Model.EmisionesDiarias)
+                {
+                    var altura = (112m * dia.Cantidad / maximo).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                    <div class="organizador-chart-day" role="listitem" aria-label="@(dia.Fecha.ToString("d MMM yyyy", cultura)): @dia.Cantidad tickets">
+                        <strong>@dia.Cantidad</strong>
+                        <div class="organizador-chart-track" aria-hidden="true"><div class="organizador-chart-bar" style="height: @(altura)px"></div></div>
+                        <span>@dia.Fecha.ToString("dd/MM", cultura)</span>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+    <section class="organizador-surface" aria-labelledby="eventos-heading">
+        <div class="organizador-section-header"><div><h2 id="eventos-heading">Mis eventos registrados</h2><p>Hasta 20 eventos, ordenados del más reciente al más antiguo</p></div></div>
+        @if (!Model.AccesoDisponible)
+        { <p class="organizador-empty">Tus eventos se mostrarán cuando se verifique tu identidad.</p> }
+        else if (Model.Eventos.Count == 0)
+        { <p class="organizador-empty">Aún no tienes eventos registrados.</p> }
+        else
+        {
+            <div class="organizador-events">
+                @foreach (var evento in Model.Eventos)
+                {
+                    <article class="organizador-event">
+                        @if (Uri.TryCreate(evento.ImagenUrl, UriKind.Absolute, out var imagen) && (imagen.Scheme == "https" || imagen.Scheme == "http"))
+                        { <img src="@imagen.AbsoluteUri" alt="" loading="lazy" referrerpolicy="no-referrer" /> }
+                        else
+                        { <span class="organizador-image-empty" aria-hidden="true">📅</span> }
+                        <div>
+                            <h3><a asp-controller="Eventos" asp-action="Detalle" asp-route-id="@evento.Id">@evento.Titulo</a></h3>
+                            <p class="organizador-category">@evento.Categoria</p>
+                            <div class="organizador-event-meta"><span>@evento.Fecha.ToString("d MMM yyyy · HH:mm", cultura)</span><span>@evento.TicketsEmitidos tickets emitidos</span><span>@evento.ParticipantesDistintos participantes distintos</span></div>
+                            <p class="organizador-price">Precio actual: @(evento.PrecioActual == 0 ? "Gratis" : evento.PrecioActual.ToString("C", cultura))</p>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+    <section class="organizador-surface organizador-participants" aria-labelledby="participantes-heading">
+        <div class="organizador-section-header"><div><h2 id="participantes-heading">Participantes recientes</h2><p>Hasta 10 adquisiciones recientes; una persona puede aparecer más de una vez.</p></div></div>
+        @if (!Model.AccesoDisponible)
+        { <p class="organizador-empty">Los participantes requieren una sesión de organizador verificada.</p> }
+        else if (Model.Participantes.Count == 0)
+        { <p class="organizador-empty">Aún no hay tickets emitidos para tus eventos.</p> }
+        else
+        {
+            <div class="organizador-table-scroll" tabindex="0" role="region" aria-label="Tabla de participantes recientes">
+                <table>
+                    <caption class="organizador-visually-hidden">Adquisiciones de tickets de tus eventos</caption>
+                    <thead><tr><th scope="col">Nombre</th><th scope="col">Evento</th><th scope="col">Fecha de adquisición</th></tr></thead>
+                    <tbody>
+                        @foreach (var participante in Model.Participantes)
+                        {
+                            <tr><td>@(string.IsNullOrWhiteSpace(participante.Nombre) ? "Nombre no disponible" : participante.Nombre)</td><td>@participante.Evento</td><td>@participante.FechaCompra.ToString("d MMM yyyy HH:mm", cultura)</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</section>
