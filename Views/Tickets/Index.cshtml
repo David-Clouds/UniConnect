@@ -1,0 +1,61 @@
+@model UniConnect.ViewModels.MisTicketsViewModel
+@{
+    ViewData["Title"] = "Mis Tickets";
+    ViewData["Subtitle"] = "Tus entradas compradas y registros activos";
+    var cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
+}
+<link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+<section class="tickets-page" aria-labelledby="tickets-heading">
+    <h2 id="tickets-heading">Mis Tickets</h2>
+    <p class="tickets-subtitle">Tus entradas compradas y registros activos</p>
+    @if (!Model.AccesoDisponible)
+    {
+        <div class="tickets-empty" role="status">
+            <span class="tickets-symbol" aria-hidden="true">🎟</span>
+            <h3>Necesitas una sesión verificada</h3>
+            <p>Para proteger tus entradas, no podemos mostrarlas hasta que el inicio de sesión esté disponible e integrado.</p>
+            <a class="btn-primary" asp-controller="Eventos" asp-action="Index">Explorar eventos</a>
+        </div>
+    }
+    else
+    {
+        <div class="tickets-stats" aria-label="Resumen de tickets">
+            <div><strong>@Model.TotalTickets</strong><span>Total de tickets</span></div>
+            <div><strong>@Model.EventosProximos</strong><span>Eventos próximos</span></div>
+            <div><strong>@Model.EventosPasados</strong><span>Eventos pasados</span></div>
+        </div>
+        @if (Model.Tickets.Count == 0)
+        {
+            <div class="tickets-empty">
+                <span class="tickets-symbol" aria-hidden="true">🎟</span>
+                <h3>Aún no tienes tickets</h3>
+                <p>Tus entradas y registros aparecerán aquí cuando estén disponibles.</p>
+                <a class="btn-primary" asp-controller="Eventos" asp-action="Index">Explorar eventos</a>
+            </div>
+        }
+        <div class="tickets-list">
+            @foreach (var ticket in Model.Tickets)
+            {
+                <article class="ticket-card">
+                    <div class="ticket-card-info">
+                        @if (Uri.TryCreate(ticket.ImagenUrl, UriKind.Absolute, out var imagen) && (imagen.Scheme == "https" || imagen.Scheme == "http"))
+                        {
+                            <img class="ticket-image" src="@imagen.AbsoluteUri" alt="" loading="lazy" referrerpolicy="no-referrer" />
+                        }
+                        else
+                        {
+                            <span class="ticket-image ticket-image-empty" aria-hidden="true">🎟</span>
+                        }
+                        <div class="ticket-card-text">
+                            <h3><a asp-controller="Tickets" asp-action="Detalle" asp-route-id="@ticket.Id">@ticket.Titulo</a></h3>
+                            <div class="ticket-meta"><span>@ticket.FechaEvento.ToString("d MMM yyyy", cultura)</span><span>@ticket.FechaEvento.ToString("HH:mm", cultura)</span></div>
+                            <p class="ticket-organizer">@ticket.Organizador</p>
+                            <p class="ticket-number">Ticket #@ticket.Id</p>
+                        </div>
+                    </div>
+                    <div class="ticket-qr-side"><span class="ticket-qr-placeholder">QR</span><span>No disponible</span></div>
+                </article>
+            }
+        </div>
+    }
+</section>
