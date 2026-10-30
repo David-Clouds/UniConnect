@@ -1,21 +1,74 @@
 using UniConnect.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace UniConnect.Data
 {
     public static class SeedData
     {
+        // Invocado únicamente para la cuenta recién creada en Development.
+        // El llamador controla la transacción y confirma todos los registros juntos.
+        internal static async Task PrepararTicketsDemoAsync(AppDbContext context,
+            Organizador organizador, Estudiante demo)
+        {
+            var eventos = organizador.Id == 0
+                ? new List<Evento>()
+                : await context.Eventos.Where(e => e.OrganizadorId == organizador.Id)
+                    .OrderBy(e => e.Id).Take(3).ToListAsync();
+
+            var propuestas = new[]
+            {
+                (Titulo: "Tech Summit USMP: Inteligencia Artificial", Categoria: "Académico", Precio: 0m),
+                (Titulo: "Noche Cultural USMP: Arte y Tradición", Categoria: "Cultura", Precio: 15m),
+                (Titulo: "Hackathon 48H: Ciudad Inteligente Lima", Categoria: "Académico", Precio: 0m)
+            };
+            var ahora = DateTime.Now;
+            foreach (var propuesta in propuestas)
+            {
+                if (eventos.Count == 3) break;
+                if (eventos.Any(e => e.Titulo == propuesta.Titulo)) continue;
+                var evento = new Evento
+                {
+                    Titulo = propuesta.Titulo,
+                    Categoria = propuesta.Categoria,
+                    Fecha = ahora.AddDays(7 * (eventos.Count + 1)),
+                    Precio = propuesta.Precio,
+                    Descripcion = "Evento de demostración local de UniConnect.",
+                    Organizador = organizador
+                };
+                context.Eventos.Add(evento);
+                eventos.Add(evento);
+            }
+
+            foreach (var evento in eventos)
+            {
+                context.Tickets.Add(new Ticket
+                {
+                    Estudiante = demo,
+                    Evento = evento,
+                    FechaCompra = ahora,
+                    // Identificador de demostración, no una imagen QR ni un comprobante de pago.
+                    CodigoQR = $"DEMO-{Guid.NewGuid():N}"
+                });
+            }
+        }
+
         public static void Inicializar(AppDbContext context)
         {
             if (!context.Eventos.Any()) // ya hay datos, no dupliques
             {
-                var organizador = new Organizador
+                var organizador = context.Organizadores.FirstOrDefault(o =>
+                    o.Nombre == "DevClub USMP" && o.Correo == "devclub@usmp.pe");
+                if (organizador is null)
                 {
-                    Nombre = "DevClub USMP",
-                    Correo = "devclub@usmp.pe",
-                    Descripcion = "Comunidad de desarrollo de software"
-                };
-                context.Organizadores.Add(organizador);
-                context.SaveChanges();
+                    organizador = new Organizador
+                    {
+                        Nombre = "DevClub USMP",
+                        Correo = "devclub@usmp.pe",
+                        Descripcion = "Comunidad de desarrollo de software"
+                    };
+                    context.Organizadores.Add(organizador);
+                    context.SaveChanges();
+                }
 
                 context.Eventos.AddRange(
                     new Evento
