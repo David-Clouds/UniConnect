@@ -15,11 +15,13 @@ namespace UniConnect.Controllers
         public const string SesionEstudianteCorreo = "EstudianteCorreo";
 
         private readonly AppDbContext _context;
+        private readonly IWebHostEnvironment _environment;
         private readonly IPasswordHasher<Estudiante> _hasher = new PasswordHasher<Estudiante>();
 
-        public CuentaController(AppDbContext context)
+        public CuentaController(AppDbContext context, IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         // GET: /Cuenta/Login
@@ -78,10 +80,21 @@ namespace UniConnect.Controllers
             return RedirectToAction(nameof(Login));
         }
 
-        // Como aún no hay registro, se crea una cuenta de prueba si no existe ningún estudiante.
+        // Solo una instalación Development sin estudiantes puede inicializar la demo.
         // Correo: demo@usmp.pe  ·  Contraseña: Usmp2026!
         private async Task AsegurarCuentaDemoAsync()
         {
+            if (!_environment.IsDevelopment())
+                return;
+
+            // Program.cs aplica migraciones al arrancar. Aquí solo se comprueba
+            // su historial; nunca se modifica el esquema desde el login.
+            var aplicadas = await _context.Database.GetAppliedMigrationsAsync();
+            if (!aplicadas.Contains("20261030202330_PermisosOrganizadores")
+                || (await _context.Database.GetPendingMigrationsAsync()).Any())
+                return;
+
+            await using var transaccion = await _context.Database.BeginTransactionAsync();
             if (await _context.Estudiantes.AnyAsync())
                 return;
 
@@ -89,12 +102,39 @@ namespace UniConnect.Controllers
             {
                 Nombre = "Estudiante Demo",
                 Correo = "demo@usmp.pe",
-                Codigo = "2026000001"
+                Codigo = "2026000001",
+                EsAdministradorGeneral = false
             };
             demo.PasswordHash = _hasher.HashPassword(demo, "Usmp2026!");
 
             _context.Estudiantes.Add(demo);
+
+            // La búsqueda por nombre solo identifica los datos iniciales de esta
+            // demo vacía; no concede permisos a cuentas que ya existían.
+            var organizaciones = await _context.Organizadores
+                .Where(o => o.Nombre == "DevClub USMP").Take(2).ToListAsync();
+            Organizador? organizadorDemo = null;
+            if (organizaciones.Count == 0)
+            {
+                organizadorDemo = new Organizador
+                {
+                    Nombre = "DevClub USMP",
+                    Correo = "devclub@usmp.pe",
+                    Descripcion = "Comunidad de desarrollo de software",
+                    Estudiante = demo
+                };
+                _context.Organizadores.Add(organizadorDemo);
+            }
+            else if (organizaciones.Count == 1 && organizaciones[0].EstudianteId is null)
+            {
+                organizaciones[0].Estudiante = demo;
+                organizadorDemo = organizaciones[0];
+            }
+            // No se elige arbitrariamente entre nombres duplicados ni se reemplazan responsables.
+            if (organizadorDemo is not null)
+                await SeedData.PrepararTicketsDemoAsync(_context, organizadorDemo, demo);
             await _context.SaveChangesAsync();
+            await transaccion.CommitAsync();
         }
     }
 }

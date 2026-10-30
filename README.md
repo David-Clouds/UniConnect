@@ -99,11 +99,55 @@
 ```bash
 cd UniConnect
 dotnet restore
-dotnet ef database update
-dotnet run
+dotnet run --launch-profile http
 ```
 
-Abre **http://localhost:5000/** (o el puerto que indique la consola).
+Abre **http://localhost:5180/Cuenta/Login** (o el puerto que indique la consola).
+
+### Demostración local en Development
+
+Requiere el SDK de .NET 10. Ejecuta los comandos anteriores desde la carpeta que
+contiene `UniConnect.csproj`. El perfil `http` establece `Development`; el arranque
+aplica las migraciones y carga los datos iniciales automáticamente.
+
+En una instalación de demostración sin estudiantes, abrir el login crea:
+
+- Correo: **demo@usmp.pe**
+- Contraseña de demostración: **Usmp2026!**
+
+La cuenta recién creada se asigna a **DevClub USMP** únicamente si existe una sola
+organización con ese nombre y no tiene responsable. Si no existe, se crea con sus
+datos de demostración. Nunca recibe permisos de Administrador General.
+
+Después del login puedes abrir **Mis Tickets** (`/Eventos/MisTickets`) y
+**Panel Organizador** (`/Organizador/Panel`). Encontrarás tres tickets de demostración,
+cada uno asociado a un evento distinto de DevClub USMP. Se reutilizan hasta tres
+eventos existentes de esa organización y solo se crean los que falten para completar
+tres; no se modifican sus fechas, precios ni otros datos. Si ya tenía más eventos,
+se conservan todos y se toman los tres primeros por identificador para los tickets.
+
+Las tarjetas y estadísticas se calculan a partir de estos registros: tres tickets
+emitidos y un participante único en una instalación nueva. El número de eventos
+próximos depende de las fechas de los eventos reutilizados. Los tickets son datos
+de demostración, no acreditan pagos ni asistencia y no habilitan la generación de
+QR. La cuenta, su asignación, los eventos que falten y los tickets se guardan en una
+sola transacción.
+
+Si ya existe cualquier estudiante, no se crea otra cuenta demo, no se cambian
+contraseñas ni se conceden permisos, aunque la cuenta existente sea `demo@usmp.pe`.
+El login tampoco añade eventos o tickets en esas bases existentes.
+Tampoco se reemplazan responsables existentes ni se asignan organizaciones con
+nombres ambiguos. Repetir la ejecución no vuelve a asignar la cuenta.
+
+La inicialización del login comprueba que no haya migraciones pendientes y que
+la migración de permisos esté aplicada. La factoría de diseño de EF usa SQLite
+en memoria: `dotnet ef migrations list` sin una conexión explícita no describe
+el archivo usado por la aplicación.
+
+En **Production** (y cualquier entorno distinto de Development), abrir el login
+no crea cuentas demo ni asignaciones. Las credenciales publicadas son solo para
+demostraciones locales. No utilices una base de demostración con esas cuentas en
+Production: cambiar de entorno no elimina cuentas ya creadas.
 
 ---
 
@@ -114,7 +158,7 @@ Abre **http://localhost:5000/** (o el puerto que indique la consola).
 | Runtime | Docker |
 | Rama desplegada | `main` |
 | Puerto | Variable de entorno `PORT` |
-| Base de datos | SQLite (`uniconnect.db`), no versionada en Git |
+| Base de datos | SQLite (`uniconnect.db`); el repositorio incluye un archivo inicial, no publiques tu base local modificada |
 
 ---
 
