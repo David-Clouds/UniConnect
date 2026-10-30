@@ -3,6 +3,9 @@ namespace UniConnect.ViewModels;
 public sealed class PanelOrganizadorViewModel
 {
     public bool AccesoDisponible { get; init; }
+    public bool EsAdministradorGeneral { get; init; }
+    public int? OrganizadorSeleccionadoId { get; init; }
+    public IReadOnlyList<OrganizadorOpcionViewModel> Organizadores { get; init; } = [];
     public int TotalEventos { get; init; }
     public int TotalTickets { get; init; }
     public int ParticipantesUnicos { get; init; }

@@ -1,4 +1,6 @@
 .organizador-page { display: grid; gap: 28px; max-width: 1280px; margin: auto; }
+.organizador-selector { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.organizador-selector input, .organizador-selector select { max-width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: white; color: var(--text-1); }
 .organizador-page h2, .organizador-stat strong { font-family: 'Poppins', sans-serif; }
 .organizador-page h2 { font-size: 16px; margin: 0; line-height: 1.5; }
 .organizador-access { background: var(--usmp-red-light); border: 1px solid var(--usmp-red-muted); border-radius: 16px; padding: 20px; }

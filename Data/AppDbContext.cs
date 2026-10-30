@@ -12,5 +12,15 @@ namespace UniConnect.Data
         public DbSet<Evento> Eventos { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<Comunidad> Comunidades { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Estudiante>().Property(e => e.EsAdministradorGeneral)
+                .HasDefaultValue(false);
+            modelBuilder.Entity<Organizador>().HasOne(o => o.Estudiante).WithMany()
+                .HasForeignKey(o => o.EstudianteId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Organizador>().Property(o => o.EstudianteId).IsConcurrencyToken();
+        }
     }
 }

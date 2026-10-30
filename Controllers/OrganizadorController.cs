@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniConnect.Data;
 using UniConnect.ViewModels;
+using UniConnect.Models;
 
 namespace UniConnect.Controllers;
 
@@ -12,27 +13,56 @@ public class OrganizadorController : Controller
 
     public OrganizadorController(AppDbContext context) => _context = context;
 
-    // Authentication integration point: the authentication module must verify
-    // organizer permission and map its trusted identity to an existing Organizador.
-    // Never substitute a browser parameter, fixed ID or unverified claim here.
-    // Keep access closed until that contract is implemented.
-    private int? ObtenerOrganizadorVerificado() => null;
+    private async Task<Estudiante?> ObtenerEstudianteAsync(CancellationToken ct)
+    {
+        await HttpContext.Session.LoadAsync(ct);
+        if (!HttpContext.Session.TryGetValue(CuentaController.SesionEstudianteId, out var valor)
+            || valor.Length != sizeof(int)) return null;
+        var id = HttpContext.Session.GetInt32(CuentaController.SesionEstudianteId);
+        if (id is not > 0) return null;
+        // Project only the current identity and permission, never credentials.
+        return await _context.Estudiantes.AsNoTracking().Where(e => e.Id == id.Value)
+            .Select(e => new Estudiante { Id = e.Id, EsAdministradorGeneral = e.EsAdministradorGeneral })
+            .SingleOrDefaultAsync(ct);
+    }
+
+    private IActionResult Login(string destino)
+    {
+        var retorno = Url.Action(destino, "Organizador");
+        if (retorno is null || !Url.IsLocalUrl(retorno)) retorno = Url.Content("~/Organizador/Panel");
+        return RedirectToAction(nameof(CuentaController.Login), "Cuenta", new { returnUrl = retorno });
+    }
+
+    private IQueryable<Organizador> Permitidos(Estudiante estudiante) =>
+        _context.Organizadores.AsNoTracking().Where(o => estudiante.EsAdministradorGeneral
+            || o.EstudianteId == estudiante.Id);
+
+    private static IQueryable<OrganizadorOpcionViewModel> Opciones(IQueryable<Organizador> consulta) =>
+        consulta.OrderBy(o => o.Nombre).ThenBy(o => o.Id).Select(o => new OrganizadorOpcionViewModel
+        {
+            Id = o.Id, Nombre = o.Nombre, EstudianteId = o.EstudianteId,
+            Responsable = o.Estudiante == null ? null : o.Estudiante.Nombre
+        });
 
     [HttpGet("/Organizador/Panel")]
-    public async Task<IActionResult> Panel(CancellationToken cancellationToken)
+    public async Task<IActionResult> Panel(int? organizadorId, CancellationToken cancellationToken)
     {
         ViewBag.Active = "organizer";
-        var organizadorId = ObtenerOrganizadorVerificado();
-        if (User.Identity?.IsAuthenticated != true || organizadorId is null)
-        {
-            Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return View(new PanelOrganizadorViewModel());
-        }
+        var estudiante = await ObtenerEstudianteAsync(cancellationToken);
+        if (estudiante is null) return Login(nameof(Panel));
+        if (!ModelState.IsValid || organizadorId is <= 0) return BadRequest();
+        var permitidos = Permitidos(estudiante);
+        var opciones = await Opciones(permitidos).ToListAsync(cancellationToken);
+        if (organizadorId.HasValue && !opciones.Any(o => o.Id == organizadorId.Value))
+            return StatusCode(StatusCodes.Status403Forbidden);
+        if (!estudiante.EsAdministradorGeneral && opciones.Count == 0)
+            return StatusCode(StatusCodes.Status403Forbidden);
+        organizadorId ??= opciones.Select(o => (int?)o.Id).FirstOrDefault();
 
         var eventosPropios = _context.Eventos.AsNoTracking()
-            .Where(e => e.OrganizadorId == organizadorId.Value);
+            .Where(e => e.OrganizadorId == organizadorId && permitidos.Any(o => o.Id == e.OrganizadorId));
         var ticketsPropios = _context.Tickets.AsNoTracking()
-            .Where(t => t.Evento.OrganizadorId == organizadorId.Value);
+            .Where(t => t.Evento.OrganizadorId == organizadorId && permitidos.Any(o => o.Id == t.Evento.OrganizadorId));
 
         // Existing dates have no timezone metadata. Use the application's local
         // calendar consistently; agree on a timezone with the ticket issuer later.
@@ -71,6 +101,8 @@ public class OrganizadorController : Controller
         return View(new PanelOrganizadorViewModel
         {
             AccesoDisponible = true, TotalEventos = totalEventos, TotalTickets = totalTickets,
+            EsAdministradorGeneral = estudiante.EsAdministradorGeneral,
+            OrganizadorSeleccionadoId = organizadorId, Organizadores = opciones,
             ParticipantesUnicos = participantesUnicos, EventosProximos = proximos,
             Eventos = eventos, Participantes = participantes,
             EmisionesDiarias = Enumerable.Range(0, 7).Select(i => new EmisionDiariaViewModel
@@ -78,5 +110,54 @@ public class OrganizadorController : Controller
                 Fecha = inicio.AddDays(i), Cantidad = porDia.GetValueOrDefault(inicio.AddDays(i))
             }).ToList()
         });
+    }
+
+    [HttpGet("/Organizador/Responsables")]
+    public async Task<IActionResult> Responsables(CancellationToken cancellationToken)
+    {
+        var estudiante = await ObtenerEstudianteAsync(cancellationToken);
+        if (estudiante is null) return Login(nameof(Responsables));
+        if (!estudiante.EsAdministradorGeneral) return StatusCode(StatusCodes.Status403Forbidden);
+        ViewBag.Active = "organizer";
+        return View(new GestionOrganizadoresViewModel
+        {
+            Organizadores = await Opciones(_context.Organizadores.AsNoTracking()).ToListAsync(cancellationToken),
+            Mensaje = TempData["AsignacionMensaje"] as string
+        });
+    }
+
+    [HttpPost("/Organizador/AsignarResponsable")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AsignarResponsable(AsignacionOrganizadorViewModel model, CancellationToken cancellationToken)
+    {
+        var estudiante = await ObtenerEstudianteAsync(cancellationToken);
+        if (estudiante is null) return Login(nameof(Responsables));
+        if (!estudiante.EsAdministradorGeneral) return StatusCode(StatusCodes.Status403Forbidden);
+        if (!ModelState.IsValid) return BadRequest();
+
+        // Recheck permission in the write transaction. Serializable isolation and
+        // the concurrency token prevent silently overwriting a concurrent reassignment.
+        await using var transaccion = await _context.Database.BeginTransactionAsync(cancellationToken);
+        if (!await _context.Estudiantes.AsNoTracking().AnyAsync(e => e.Id == estudiante.Id
+            && e.EsAdministradorGeneral, cancellationToken)) return StatusCode(StatusCodes.Status403Forbidden);
+        var organizador = await _context.Organizadores.SingleOrDefaultAsync(o => o.Id == model.OrganizadorId, cancellationToken);
+        if (organizador is null) return NotFound();
+        if (organizador.EstudianteId != model.ResponsableAnteriorId)
+            return Conflict("La asignación cambió. Recarga la página antes de continuar.");
+        if (model.EstudianteId.HasValue && !await _context.Estudiantes.AsNoTracking()
+            .AnyAsync(e => e.Id == model.EstudianteId.Value, cancellationToken))
+            return BadRequest("El estudiante indicado no existe.");
+        organizador.EstudianteId = model.EstudianteId;
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            await transaccion.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict("La asignación cambió. Recarga la página antes de continuar.");
+        }
+        TempData["AsignacionMensaje"] = model.EstudianteId.HasValue ? "Responsable actualizado." : "Asignación revocada.";
+        return RedirectToAction(nameof(Responsables));
     }
 }

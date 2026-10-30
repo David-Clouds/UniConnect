@@ -83,6 +83,11 @@ namespace UniConnect.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("EsAdministradorGeneral")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -145,11 +150,17 @@ namespace UniConnect.Migrations
                     b.Property<string>("Descripcion")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("EstudianteId")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("EstudianteId");
 
                     b.ToTable("Organizadores");
                 });
@@ -191,6 +202,16 @@ namespace UniConnect.Migrations
                         .IsRequired();
 
                     b.Navigation("Organizador");
+                });
+
+            modelBuilder.Entity("UniConnect.Models.Organizador", b =>
+                {
+                    b.HasOne("UniConnect.Models.Estudiante", "Estudiante")
+                        .WithMany()
+                        .HasForeignKey("EstudianteId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Estudiante");
                 });
 
             modelBuilder.Entity("UniConnect.Models.Ticket", b =>

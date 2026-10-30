@@ -13,6 +13,27 @@
 }
 <link rel="stylesheet" href="~/css/organizador.css" asp-append-version="true" />
 <section class="organizador-page" aria-label="Panel del Organizador">
+    @if (Model.AccesoDisponible)
+    {
+        <section class="organizador-surface" aria-label="Selección de organizador">
+            <form method="get" asp-controller="Organizador" asp-action="Panel" class="organizador-selector">
+                <label for="organizadorId">Organizador</label>
+                <select id="organizadorId" name="organizadorId">
+                    @foreach (var organizador in Model.Organizadores)
+                    {
+                        <option value="@organizador.Id" selected="@(organizador.Id == Model.OrganizadorSeleccionadoId)">@organizador.Nombre</option>
+                    }
+                </select>
+                <button type="submit" class="btn-primary" disabled="@(Model.Organizadores.Count == 0)">Ver panel</button>
+            </form>
+            @if (Model.Organizadores.Count == 0) { <p>No hay organizadores registrados.</p> }
+            @if (Model.EsAdministradorGeneral)
+            {
+                <p><a asp-action="Responsables" asp-controller="Organizador">Gestionar responsables</a></p>
+                <p class="organizador-muted">La consulta general no concede permisos de edición o eliminación de eventos ajenos.</p>
+            }
+        </section>
+    }
     @if (!Model.AccesoDisponible)
     {
         <div class="organizador-access" role="status">
