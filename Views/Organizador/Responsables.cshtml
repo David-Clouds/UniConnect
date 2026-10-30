@@ -1,0 +1,30 @@
+@model UniConnect.ViewModels.GestionOrganizadoresViewModel
+@{
+    ViewData["Title"] = "Responsables de organizadores";
+    ViewData["Subtitle"] = "Administración General";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/organizador.css" asp-append-version="true" />
+}
+<section class="organizador-page">
+    <a asp-action="Panel" asp-controller="Organizador">← Volver al panel</a>
+    @if (Model.Mensaje is not null) { <p role="status">@Model.Mensaje</p> }
+    <p>Indica el identificador de un estudiante existente. Deja el campo vacío para revocar la asignación. Esta acción no concede el permiso de Administrador General.</p>
+    @if (Model.Organizadores.Count == 0) { <p>No hay organizadores registrados.</p> }
+    @foreach (var organizador in Model.Organizadores)
+    {
+        <article class="organizador-surface">
+            <h2>@organizador.Nombre</h2>
+            <p>Responsable: @(organizador.Responsable ?? "Sin asignar")
+                @if (organizador.EstudianteId.HasValue) { <span>(Estudiante #@organizador.EstudianteId)</span> }
+            </p>
+            <form method="post" asp-action="AsignarResponsable" asp-controller="Organizador" class="organizador-selector">
+                <input type="hidden" name="OrganizadorId" value="@organizador.Id" />
+                <input type="hidden" name="ResponsableAnteriorId" value="@organizador.EstudianteId" />
+                <label for="responsable-@organizador.Id">Identificador del responsable</label>
+                <input id="responsable-@organizador.Id" type="number" name="EstudianteId" min="1" value="@organizador.EstudianteId" />
+                <button type="submit" class="btn-primary">Guardar asignación o revocar</button>
+            </form>
+        </article>
+    }
+</section>

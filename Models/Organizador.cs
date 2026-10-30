@@ -6,6 +6,8 @@ namespace UniConnect.Models
         public string Nombre { get; set; } = string.Empty;
         public string Correo { get; set; } = string.Empty;
         public string? Descripcion { get; set; }
+        public int? EstudianteId { get; set; }
+        public Estudiante? Estudiante { get; set; }
 
         public ICollection<Evento> Eventos { get; set; } = new List<Evento>();
     }

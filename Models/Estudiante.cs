@@ -7,6 +7,7 @@ namespace UniConnect.Models
         public string Correo { get; set; } = string.Empty;
         public string Codigo { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
+        public bool EsAdministradorGeneral { get; set; } = false;
 
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }
