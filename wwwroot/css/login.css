@@ -1,0 +1,289 @@
+/* ═══════════════════════════════════════════════════════════
+   UniConnect · Login (basado en el diseño de Figma)
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --usmp-red: #B91C1C;
+  --usmp-red-dark: #991B1B;
+}
+
+* { box-sizing: border-box; }
+
+html, body.login-body {
+  margin: 0;
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #1a0505;
+}
+
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: hidden;
+}
+
+/* Fondo */
+.login-bg {
+  position: absolute;
+  inset: 0;
+  background-color: #3b0a0a;
+  background-image: url('https://filialsur.usmp.edu.pe/wp-content/uploads/2024/03/Bienvenida_USMP-FS-2024.jpg');
+  background-size: cover;
+  background-position: center;
+}
+.login-vignette {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(10,2,2,0.28) 0%, rgba(60,8,8,0.22) 50%, rgba(10,2,2,0.42) 100%);
+}
+
+/* Vidrio reutilizable */
+.glass-pill,
+.glass-box {
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 16px;
+  color: #fff;
+}
+
+/* Estadísticas (arriba izquierda) */
+.login-stats {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  z-index: 10;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+.glass-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Lema (abajo izquierda) */
+.login-tagline {
+  position: absolute;
+  bottom: 32px;
+  left: 32px;
+  z-index: 10;
+  max-width: 320px;
+  display: none;
+}
+.tagline-title {
+  margin: 0 0 4px;
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.35;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.tagline-title span { color: #FCA5A5; }
+.tagline-sub {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+}
+
+/* Testimonio (abajo derecha) */
+.login-testimonial {
+  position: absolute;
+  bottom: 32px;
+  right: 32px;
+  z-index: 10;
+  max-width: 280px;
+  display: none;
+}
+.glass-box { padding: 16px; }
+.stars { display: flex; gap: 4px; margin-bottom: 8px; color: #FBBF24; }
+.stars svg { width: 16px; height: 16px; }
+.testimonial-text {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  font-style: italic;
+}
+.testimonial-author { display: flex; align-items: center; gap: 8px; }
+.author-avatar {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--usmp-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.author-name { margin: 0; font-size: 12px; font-weight: 600; }
+.author-role { margin: 0; font-size: 12px; color: rgba(255,255,255,0.5); }
+
+@media (min-width: 1024px) {
+  .login-stats { display: flex; }
+  .login-tagline { display: block; }
+}
+@media (min-width: 1280px) {
+  .login-testimonial { display: block; }
+}
+
+/* Columna central */
+.login-center {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.login-shield {
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.25);
+  line-height: 0;
+}
+.login-shield svg { width: 44px; height: auto; }
+.brand-name {
+  margin: 0;
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.brand-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+}
+
+/* Tarjeta de vidrio */
+.glass-card {
+  padding: 28px;
+  border-radius: 24px;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.28);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.card-title {
+  margin: 0 0 2px;
+  text-align: center;
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+}
+.card-sub {
+  margin: 0 0 20px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+}
+
+/* Formulario */
+.field { margin-bottom: 12px; }
+.login-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #111;
+  background: rgba(255,255,255,0.88);
+  border: 1.5px solid rgba(255,255,255,0.35);
+  outline: none;
+  transition: border-color .15s, background .15s;
+}
+.login-input:focus {
+  border-color: var(--usmp-red);
+  background: #fff;
+}
+.login-input.input-validation-error { border-color: #FCA5A5; }
+.field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #FECACA;
+}
+.field-error:empty { display: none; }
+
+.login-alert {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(185,28,28,0.55);
+  border: 1px solid rgba(254,202,202,0.45);
+}
+.login-alert ul { margin: 0; padding: 0; list-style: none; }
+.login-alert.validation-summary-valid { display: none; }
+
+.forgot { text-align: right; margin-bottom: 12px; }
+.forgot a {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+}
+.forgot a:hover { text-decoration: underline; }
+
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  background: var(--usmp-red);
+  box-shadow: 0 4px 16px rgba(185,28,28,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .15s;
+}
+.login-btn:hover { background: var(--usmp-red-dark); }
+.login-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.btn-loading { display: none; align-items: center; gap: 8px; }
+.login-btn.is-loading { background: rgba(120,120,120,0.7); box-shadow: none; cursor: default; }
+.login-btn.is-loading .btn-label { display: none; }
+.login-btn.is-loading .btn-loading { display: inline-flex; }
+.spin { width: 16px; height: 16px; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.login-footer {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+}
