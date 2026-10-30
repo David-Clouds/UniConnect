@@ -1,0 +1,99 @@
+@model UniConnect.Models.Comunidad
+@{
+    ViewData["Title"] = Model.Nombre;
+    ViewData["Subtitle"] = Model.TipoApoyo;
+    var inscrito = (bool)ViewBag.Inscrito;
+    var tags = (Model.Tags ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    var claseTipo = Model.TipoApoyo switch
+    {
+        "Voluntariado" => "tipo-voluntariado",
+        "Comunidad" => "tipo-comunidad",
+        "Causa solidaria" => "tipo-causa",
+        _ => "tipo-todos"
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/joinus.css" asp-append-version="true" />
+}
+
+<a asp-action="Index" class="back-link">← Volver a Join Us</a>
+
+<div class="join-detail @claseTipo">
+    <div class="join-detail-main">
+        <div class="join-detail-hero" style="background-image:url('@Model.ImagenUrl')">
+            <span class="join-badge">@Model.TipoApoyo</span>
+        </div>
+
+        <h1 class="detail-title">@Model.Nombre</h1>
+        <p class="join-detail-org">Organiza: <strong>@Model.Organizacion</strong></p>
+
+        <div class="join-info-grid">
+            <div class="join-info"><span class="join-info-label">📍 Ubicación</span><span>@Model.Ubicacion</span></div>
+            @if (!string.IsNullOrEmpty(Model.Frecuencia))
+            {
+                <div class="join-info"><span class="join-info-label">🗓️ Frecuencia</span><span>@Model.Frecuencia</span></div>
+            }
+            @if (!string.IsNullOrEmpty(Model.Duracion))
+            {
+                <div class="join-info"><span class="join-info-label">⏱️ Duración</span><span>@Model.Duracion</span></div>
+            }
+            <div class="join-info"><span class="join-info-label">👥 Miembros</span><span>@Model.Miembros</span></div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Impacto))
+        {
+            <div class="join-impact">
+                <span class="join-impact-icon">🌱</span>
+                <div>
+                    <p class="join-impact-label">Nuestro impacto</p>
+                    <p class="join-impact-text">@Model.Impacto</p>
+                </div>
+            </div>
+        }
+
+        <h2 class="join-section-title">Sobre la iniciativa</h2>
+        <p class="detail-description">@(Model.DescripcionLarga ?? Model.Descripcion)</p>
+
+        @if (tags.Any())
+        {
+            <div class="join-tags">
+                @foreach (var tag in tags)
+                {
+                    <span class="join-tag">#@tag</span>
+                }
+            </div>
+        }
+    </div>
+
+    <aside class="join-side">
+        <div class="join-side-card">
+            <p class="join-side-members"><strong>@Model.Miembros</strong> estudiantes ya participan</p>
+            <ul class="join-side-list">
+                @if (!string.IsNullOrEmpty(Model.Frecuencia))
+                {
+                    <li>🗓️ @Model.Frecuencia</li>
+                }
+                @if (!string.IsNullOrEmpty(Model.Duracion))
+                {
+                    <li>⏱️ @Model.Duracion</li>
+                }
+                <li>📍 @Model.Ubicacion</li>
+            </ul>
+
+            @if (inscrito)
+            {
+                <div class="join-success">✅ ¡Inscrito con éxito!</div>
+                <p class="join-side-note">Te contactaremos con los siguientes pasos.</p>
+            }
+            else
+            {
+                <form asp-action="Unirse" asp-route-id="@Model.Id" method="post">
+                    <button type="submit" class="join-btn">Unirme ahora</button>
+                </form>
+                <p class="join-side-note">Inscripción gratuita · Sin compromiso</p>
+            }
+        </div>
+    </aside>
+</div>
