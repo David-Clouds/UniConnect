@@ -13,6 +13,7 @@ namespace UniConnect.Controllers
         public const string SesionEstudianteId = "EstudianteId";
         public const string SesionEstudianteNombre = "EstudianteNombre";
         public const string SesionEstudianteCorreo = "EstudianteCorreo";
+        public const string SesionRol = "Rol";
 
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _environment;
@@ -32,7 +33,9 @@ namespace UniConnect.Controllers
             HttpContext.Session.Remove(SesionEstudianteId);
             HttpContext.Session.Remove(SesionEstudianteNombre);
             HttpContext.Session.Remove(SesionEstudianteCorreo);
+            HttpContext.Session.Remove(SesionRol);
 
+            await AsegurarCuentasDeAccesoAsync();
             await AsegurarCuentaDemoAsync();
 
             return View(new LoginViewModel { ReturnUrl = returnUrl });
@@ -65,6 +68,8 @@ namespace UniConnect.Controllers
             HttpContext.Session.SetInt32(SesionEstudianteId, estudiante!.Id);
             HttpContext.Session.SetString(SesionEstudianteNombre, estudiante.Nombre);
             HttpContext.Session.SetString(SesionEstudianteCorreo, estudiante.Correo);
+            HttpContext.Session.SetString(SesionRol,
+                estudiante.EsAdministradorGeneral ? "Administrador" : "Estudiante");
 
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                 return Redirect(model.ReturnUrl);
@@ -78,6 +83,35 @@ namespace UniConnect.Controllers
         {
             HttpContext.Session.Clear();
             return RedirectToAction(nameof(Login));
+        }
+
+        // Cuentas de acceso para la presentación. Se crean una sola vez, sin
+        // modificar usuarios que ya existen ni sus contraseñas.
+        private async Task AsegurarCuentasDeAccesoAsync()
+        {
+            var cuentas = new[]
+            {
+                new { Nombre = "Administrador UniConnect", Correo = "admin@usmp.pe", Codigo = "ADMIN2026", EsAdministrador = true },
+                new { Nombre = "Estudiante Demo", Correo = "demo@usmp.pe", Codigo = "2026000001", EsAdministrador = false }
+            };
+
+            foreach (var cuenta in cuentas)
+            {
+                var existe = await _context.Estudiantes.AnyAsync(e => e.Correo.ToLower() == cuenta.Correo);
+                if (existe) continue;
+
+                var estudiante = new Estudiante
+                {
+                    Nombre = cuenta.Nombre,
+                    Correo = cuenta.Correo,
+                    Codigo = cuenta.Codigo,
+                    EsAdministradorGeneral = cuenta.EsAdministrador
+                };
+                estudiante.PasswordHash = _hasher.HashPassword(estudiante, "Usmp2026!");
+                _context.Estudiantes.Add(estudiante);
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         // Solo una instalación Development sin estudiantes puede inicializar la demo.
