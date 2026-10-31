@@ -1,0 +1,54 @@
+@model UniConnect.ViewModels.CheckoutViewModel
+@{
+    ViewData["Title"] = "Comprar ticket";
+    ViewData["Subtitle"] = Model.Titulo;
+    var cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/checkout.css" asp-append-version="true" />
+}
+<section class="checkout-page">
+    <a class="back-link" asp-controller="Eventos" asp-action="Detalle" asp-route-id="@Model.EventoId">← Volver al evento</a>
+
+    @if (TempData["TicketError"] is string errorTicket)
+    {
+        <p class="flash flash-error" role="alert">@errorTicket</p>
+    }
+
+    <div class="checkout-grid">
+        <article class="checkout-summary" aria-labelledby="checkout-evento">
+            @if (Uri.TryCreate(Model.ImagenUrl, UriKind.Absolute, out var imagen) && (imagen.Scheme == "https" || imagen.Scheme == "http"))
+            {
+                <img class="checkout-image" src="@imagen.AbsoluteUri" alt="" referrerpolicy="no-referrer" />
+            }
+            <h2 id="checkout-evento">@Model.Titulo</h2>
+            <dl class="checkout-details">
+                <div><dt>Fecha</dt><dd>@Model.Fecha.ToString("d MMM yyyy", cultura)</dd></div>
+                <div><dt>Hora</dt><dd>@Model.Fecha.ToString("HH:mm", cultura)</dd></div>
+                <div class="checkout-wide"><dt>Organiza</dt><dd>@Model.Organizador</dd></div>
+            </dl>
+        </article>
+
+        <form method="post" class="checkout-form" asp-controller="Tickets" asp-action="ConfirmarCompra" asp-route-id="@Model.EventoId">
+            <h2>Método de pago</h2>
+            <p class="checkout-note">Compra simulada: no se realiza ningún cobro real.</p>
+
+            <fieldset class="checkout-methods">
+                <legend class="visually-hidden">Método de pago simulado</legend>
+                @for (var i = 0; i < Model.MetodosPago.Count; i++)
+                {
+                    <label class="pay-option">
+                        <input type="radio" name="metodoPago" value="@Model.MetodosPago[i]" checked="@(i == 0)" />
+                        <span>@Model.MetodosPago[i]</span>
+                    </label>
+                }
+            </fieldset>
+
+            <div class="checkout-total">
+                <span>Total</span>
+                <strong>S/ @Model.Precio.ToString("0.00", cultura)</strong>
+            </div>
+            <button type="submit" class="btn-primary checkout-submit">Confirmar compra</button>
+        </form>
+    </div>
+</section>

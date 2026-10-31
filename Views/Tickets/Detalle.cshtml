@@ -6,9 +6,14 @@
 }
 @section Styles {
     <link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/checkout.css" asp-append-version="true" />
 }
 <section class="tickets-page">
     <a class="back-link" href="/Eventos/MisTickets">← Volver a Mis Tickets</a>
+    @if (TempData["TicketMensaje"] is string mensajeTicket)
+    {
+        <p class="flash flash-ok" role="status">@mensajeTicket</p>
+    }
     <article class="ticket-digital" aria-labelledby="ticket-title">
         <header class="ticket-digital-header">
             <div class="ticket-brand">@await Html.PartialAsync("_UsmpShield")<span>UniConnect · USMP</span></div>
@@ -24,8 +29,9 @@
                 <div class="ticket-field-wide"><dt>Fecha de emisión</dt><dd>@Model.FechaCompra.ToString("d MMM yyyy HH:mm", cultura)</dd></div>
             </dl>
             <div class="ticket-qr-area">
-                <div class="ticket-qr-placeholder ticket-qr-large">QR no disponible</div>
-                <p>La visualización del código QR estará disponible cuando se integre su generación segura.</p>
+                <img class="ticket-qr-img" src="@UniConnect.Services.QrTicketRenderer.ToDataUri(Model.CodigoQR)" alt="Código QR del ticket #@Model.Id" width="172" height="172" />
+                <p>Presenta este código en el ingreso al evento.</p>
+                <span class="ticket-code">@Model.CodigoQR</span>
                 <span class="ticket-number">Ticket #@Model.Id</span>
             </div>
             <a class="btn-primary ticket-return" href="/Eventos/MisTickets">Ver mis tickets</a>

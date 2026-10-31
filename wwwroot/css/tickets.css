@@ -65,3 +65,8 @@
     .tickets-stats { grid-template-columns: 1fr; }
     .tickets-stats > div { display: flex; align-items: center; gap: 12px; }
 }
+
+/* Imagen QR generada en el servidor */
+.ticket-qr-img { display: block; width: 172px; height: 172px; margin: 0 auto 12px; padding: 6px; background: #fff; border: 1px solid var(--border); border-radius: 12px; image-rendering: pixelated; }
+.ticket-qr-img-sm { width: 72px; height: 72px; margin: 0; padding: 3px; border-radius: 8px; }
+.ticket-code { display: block; font-family: monospace; font-size: 11px; color: var(--text-3); word-break: break-all; margin: 8px 0 4px; }
