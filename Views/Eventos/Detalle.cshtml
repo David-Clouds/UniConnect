@@ -3,8 +3,16 @@
     ViewData["Title"] = Model.Titulo;
     ViewData["Subtitle"] = Model.Categoria;
 }
+@section Styles {
+    <link rel="stylesheet" href="~/css/checkout.css" asp-append-version="true" />
+}
 
 <a href="@Url.Action("Index", "Eventos")" class="back-link">← Volver a eventos</a>
+
+@if (TempData["TicketError"] is string errorTicket)
+{
+    <p class="flash flash-error" role="alert">@errorTicket</p>
+}
 
 <div class="detail-hero" style="background-image:url('@Model.ImagenUrl')"></div>
 
@@ -26,11 +34,13 @@
         </div>
         @if (Model.Precio == 0)
         {
-            <button class="btn-primary">Registrarme</button>
+            <form method="post" asp-controller="Tickets" asp-action="Registrar" asp-route-id="@Model.Id">
+                <button type="submit" class="btn-primary">Registrarme</button>
+            </form>
         }
         else
         {
-            <a href="@Url.Action("Checkout", "Eventos", new { id = Model.Id })" class="btn-primary">Comprar ticket</a>
+            <a asp-controller="Tickets" asp-action="Checkout" asp-route-id="@Model.Id" class="btn-primary">Comprar ticket</a>
         }
     </div>
 </div>

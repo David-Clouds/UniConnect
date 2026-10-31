@@ -9,4 +9,5 @@ public sealed class TicketDetalleViewModel
     public DateTime FechaEvento { get; init; }
     public DateTime FechaCompra { get; init; }
     public string Organizador { get; init; } = string.Empty;
+    public string CodigoQR { get; init; } = string.Empty;
 }

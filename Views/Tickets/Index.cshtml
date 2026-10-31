@@ -55,7 +55,7 @@
                             <p class="ticket-number">Ticket #@ticket.Id</p>
                         </div>
                     </div>
-                    <div class="ticket-qr-side"><span class="ticket-qr-placeholder">QR</span><span>No disponible</span></div>
+                    <div class="ticket-qr-side"><img class="ticket-qr-img ticket-qr-img-sm" src="@UniConnect.Services.QrTicketRenderer.ToDataUri(ticket.CodigoQR, 4)" alt="Código QR del ticket #@ticket.Id" width="72" height="72" /><span>Código QR</span></div>
                 </article>
             }
         </div>
