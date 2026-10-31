@@ -1,0 +1,80 @@
+@model UniConnect.ViewModels.PerfilViewModel
+@{
+    ViewData["Title"] = "Mi Perfil";
+    ViewData["Subtitle"] = "Tu historial y configuración";
+    var iniciales = string.Concat(Model.Nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2).Select(p => char.ToUpperInvariant(p[0])));
+    if (string.IsNullOrWhiteSpace(iniciales)) { iniciales = "US"; }
+    var cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/perfil.css" asp-append-version="true" />
+}
+
+<section class="profile-page" aria-labelledby="profile-name">
+    <article class="profile-card">
+        <div class="profile-cover" role="img" aria-label="Campus universitario"></div>
+        <div class="profile-main">
+            <div class="profile-avatar" aria-hidden="true">@iniciales</div>
+            <div class="profile-actions">
+                <span class="profile-role">@(Model.EsAdministrador ? "Administrador" : "Estudiante")</span>
+                <button type="button" class="profile-edit" disabled aria-disabled="true">Editar perfil</button>
+            </div>
+            <div class="profile-identity">
+                <h2 id="profile-name">@Model.Nombre</h2>
+                <p class="profile-program">@(Model.EsAdministrador ? "Administración de UniConnect" : "Comunidad USMP") · Código @Model.Codigo</p>
+                <p class="profile-description">Participa, descubre oportunidades y lleva el registro de tus experiencias dentro de la comunidad USMP.</p>
+                <div class="profile-tags" aria-label="Intereses">
+                    <span>Comunidad</span><span>Eventos</span><span>Aprendizaje</span>
+                </div>
+            </div>
+            <div class="profile-verification">
+                <div class="profile-shield">@await Html.PartialAsync("_UsmpShield")</div>
+                <span><strong>USMP</strong><small>Verificado</small></span>
+            </div>
+        </div>
+    </article>
+
+    <div class="profile-stats" aria-label="Resumen de actividad">
+        <article><strong>@Model.EventosAsistidos</strong><span>Eventos asistidos</span></article>
+        <article><strong>@Model.EventosProximos</strong><span>Eventos próximos</span></article>
+        <article><strong>@Model.Comunidades</strong><span>Comunidades</span></article>
+        <article><strong>@Model.Voluntariados</strong><span>Voluntariados</span></article>
+    </div>
+
+    <section class="profile-section profile-badges" aria-labelledby="badges-heading">
+        <h2 id="badges-heading">Insignias USMP</h2>
+        <div class="badges-list">
+            <span class="badge-card"><strong>Explorador</strong><small>Primeros eventos</small></span>
+            <span class="badge-card"><strong>Conector</strong><small>Comunidad activa</small></span>
+            <span class="badge-card"><strong>Pionero</strong><small>Parte de UniConnect</small></span>
+            <span class="badge-card"><strong>Voluntario</strong><small>Impacto social</small></span>
+        </div>
+    </section>
+
+    <section class="profile-section" aria-labelledby="activity-heading">
+        <div class="profile-section-header">
+            <div><h2 id="activity-heading">Mis Eventos</h2><p>Tu actividad registrada en UniConnect</p></div>
+            <a asp-controller="Tickets" asp-action="Index">Ver mis tickets</a>
+        </div>
+        @if (Model.Actividades.Count == 0)
+        {
+            <div class="profile-empty"><p>Aún no tienes eventos registrados.</p><a class="btn-primary" asp-controller="Eventos" asp-action="Index">Explorar eventos</a></div>
+        }
+        else
+        {
+            <div class="profile-activity-list">
+                @foreach (var actividad in Model.Actividades)
+                {
+                    <a class="profile-activity" asp-controller="Eventos" asp-action="Detalle" asp-route-id="@actividad.EventoId">
+                        @if (Uri.TryCreate(actividad.ImagenUrl, UriKind.Absolute, out var imagen) && (imagen.Scheme == "https" || imagen.Scheme == "http"))
+                        { <img src="@imagen.AbsoluteUri" alt="" loading="lazy" referrerpolicy="no-referrer" /> }
+                        else { <span class="activity-image-empty" aria-hidden="true"></span> }
+                        <span><strong>@actividad.Titulo</strong><small>@actividad.Fecha.ToString("d MMM yyyy", cultura) · @actividad.Organizador</small></span>
+                        <em>@(actividad.Fecha < DateTime.Now ? "Asistido" : "Próximo")</em>
+                    </a>
+                }
+            </div>
+        }
+    </section>
+</section>

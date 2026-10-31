@@ -1,4 +1,12 @@
-﻿<!DOCTYPE html>
+@using UniConnect.Controllers
+@{
+    var nombreUsuario = Context.Session.GetString(CuentaController.SesionEstudianteNombre) ?? "Usuario";
+    var rolUsuario = Context.Session.GetString(CuentaController.SesionRol) ?? "Estudiante";
+    var iniciales = string.Concat(nombreUsuario.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2).Select(p => char.ToUpperInvariant(p[0])));
+    if (string.IsNullOrWhiteSpace(iniciales)) { iniciales = "US"; }
+}
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
@@ -41,10 +49,10 @@
 
             <div class="sidebar-user">
                 <a asp-controller="Perfil" asp-action="Index" class="user-card">
-                    <div class="user-avatar">AS</div>
+                    <div class="user-avatar">@iniciales</div>
                     <div>
-                        <p class="user-name">Ana Sofía R.</p>
-                        <p class="user-role">Ing. Sistemas · 6to sem.</p>
+                        <p class="user-name">@nombreUsuario</p>
+                        <p class="user-role">@rolUsuario</p>
                     </div>
                 </a>
                 <a asp-controller="Cuenta" asp-action="Login" class="logout-link">↩ Cerrar sesión</a>
@@ -61,7 +69,7 @@
                     }
                 </div>
                 <input type="text" class="search-input" placeholder="Buscar eventos..." />
-                <div class="user-avatar small">AS</div>
+                <div class="user-avatar small">@iniciales</div>
             </header>
             <main class="content">
                 @RenderBody()
