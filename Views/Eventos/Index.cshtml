@@ -21,6 +21,8 @@
     </div>
 </form>
 
+@await Component.InvokeAsync("Recomendaciones")
+
 <div class="event-grid">
     @if (!Model.Any())
     {

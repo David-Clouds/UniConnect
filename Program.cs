@@ -28,6 +28,11 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
 });
 
+// Machine Learning (ML.NET): clasificación de eventos y recomendaciones personalizadas.
+// Los modelos se entrenan en segundo plano al iniciar y se reentrenan cada 15 minutos.
+builder.Services.AddSingleton<UniConnect.Services.ML.ServicioMl>();
+builder.Services.AddHostedService<UniConnect.Services.ML.EntrenamientoMlService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -48,7 +53,8 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Eventos}/{action=Index}/{id?}");
+    // "/" abre Inicio: login si no hay sesión, eventos si ya la hay.
+    pattern: "{controller=Inicio}/{action=Index}/{id?}");
 
 // Aplicar migraciones y sembrar datos de prueba automáticamente al iniciar
 using (var scope = app.Services.CreateScope())

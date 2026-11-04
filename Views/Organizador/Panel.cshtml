@@ -34,6 +34,10 @@
             }
         </section>
     }
+    @if (Model.AccesoDisponible)
+    {
+        <partial name="_AsistenteCategoria" />
+    }
     @if (!Model.AccesoDisponible)
     {
         <div class="organizador-access" role="status">
