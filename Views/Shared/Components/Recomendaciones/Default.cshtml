@@ -1,0 +1,44 @@
+@model UniConnect.Services.ML.RecomendacionesDto
+@{
+    var cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
+}
+<link rel="stylesheet" href="~/css/ml.css" asp-append-version="true" />
+<section class="ml-recs" aria-labelledby="ml-recs-titulo">
+    <header class="ml-header">
+        <div>
+            <h2 id="ml-recs-titulo">@(Model.Personalizadas ? "Recomendados para ti" : "Populares en UniConnect")</h2>
+            <p>@(Model.Personalizadas
+                ? "Según los eventos a los que ya te inscribiste"
+                : "Inicia sesión e inscríbete a eventos para recibir recomendaciones personalizadas")</p>
+        </div>
+        <span class="ml-badge" title="@Model.Modelo">✨ @(Model.Personalizadas ? "ML.NET" : "Tendencias")</span>
+    </header>
+
+    <div class="ml-recs-grid">
+        @foreach (var ev in Model.Eventos)
+        {
+            <a class="ml-rec-card" asp-controller="Eventos" asp-action="Detalle" asp-route-id="@ev.Id">
+                @if (Uri.TryCreate(ev.ImagenUrl, UriKind.Absolute, out var imagen)
+                    && (imagen.Scheme == Uri.UriSchemeHttps || imagen.Scheme == Uri.UriSchemeHttp))
+                {
+                    <img class="ml-rec-img" src="@imagen.AbsoluteUri" alt="" loading="lazy" referrerpolicy="no-referrer" />
+                }
+                else
+                {
+                    <div class="ml-rec-img" aria-hidden="true"></div>
+                }
+                <div class="ml-rec-body">
+                    <span class="badge-categoria">@ev.Categoria</span>
+                    <h3>@ev.Titulo</h3>
+                    <p class="ml-rec-meta">📅 @ev.Fecha.ToString("d MMM yyyy", cultura) · @(ev.Precio == 0 ? "Gratis" : "S/ " + ev.Precio.ToString("0.00", cultura))</p>
+                    <p class="ml-rec-motivo">@ev.Motivo</p>
+                    @if (ev.Afinidad is int afinidad)
+                    {
+                        <div class="ml-barra" role="img" aria-label="Afinidad @(afinidad) %"><span style="width:@(afinidad)%"></span></div>
+                        <small class="ml-afinidad">Afinidad @(afinidad) %</small>
+                    }
+                </div>
+            </a>
+        }
+    </div>
+</section>

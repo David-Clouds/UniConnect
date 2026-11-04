@@ -1,0 +1,85 @@
+@* Asistente que sugiere la categoría de un evento con el clasificador de ML.NET. *@
+<link rel="stylesheet" href="~/css/ml.css" asp-append-version="true" />
+<section class="ml-asistente" aria-labelledby="ml-asistente-titulo">
+    <header class="ml-header">
+        <div>
+            <h2 id="ml-asistente-titulo">Asistente de categoría</h2>
+            <p>Escribe el título y la descripción de tu próximo evento: el modelo sugiere en qué categoría publicarlo.</p>
+        </div>
+        <span class="ml-badge" title="Clasificación multiclase con ML.NET">✨ ML.NET</span>
+    </header>
+
+    <form id="ml-asistente-form" class="ml-asistente-form" novalidate>
+        <label for="ml-titulo">Título del evento</label>
+        <input id="ml-titulo" name="titulo" maxlength="200" autocomplete="off" placeholder="Ej.: Torneo interfacultades de vóley" />
+        <label for="ml-descripcion">Descripción <span class="ml-opcional">(opcional)</span></label>
+        <textarea id="ml-descripcion" name="descripcion" rows="3" maxlength="2000" placeholder="¿De qué trata el evento?"></textarea>
+        <button type="submit" class="btn-primary">Sugerir categoría</button>
+    </form>
+    <div id="ml-asistente-resultado" class="ml-resultado" aria-live="polite" hidden></div>
+</section>
+<script>
+    (() => {
+        const form = document.getElementById('ml-asistente-form');
+        const salida = document.getElementById('ml-asistente-resultado');
+        if (!form || !salida) return;
+
+        const mensaje = (texto) => {
+            const p = document.createElement('p');
+            p.textContent = texto;
+            salida.replaceChildren(p);
+            salida.hidden = false;
+        };
+
+        form.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            const titulo = form.elements.titulo.value.trim();
+            const descripcion = form.elements.descripcion.value.trim();
+            if (!titulo) { mensaje('Escribe al menos el título del evento.'); return; }
+
+            mensaje('Analizando…');
+            try {
+                const respuesta = await fetch('@Url.Content("~/api/ml/clasificar")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ titulo, descripcion })
+                });
+                if (!respuesta.ok) {
+                    mensaje(respuesta.status === 503
+                        ? 'El modelo se está entrenando, intenta en unos segundos.'
+                        : 'No se pudo clasificar el evento.');
+                    return;
+                }
+                const datos = await respuesta.json();
+
+                const principal = document.createElement('p');
+                principal.className = 'ml-resultado-principal';
+                const categoria = document.createElement('strong');
+                categoria.textContent = datos.categoria;
+                principal.append('Categoría sugerida: ', categoria, ` (${Math.round(datos.confianza * 100)} % de confianza)`);
+
+                const lista = document.createElement('ul');
+                lista.className = 'ml-probabilidades';
+                for (const alternativa of datos.alternativas.slice(0, 3)) {
+                    const porcentaje = Math.round(alternativa.probabilidad * 100);
+                    const fila = document.createElement('li');
+                    const nombre = document.createElement('span');
+                    nombre.textContent = alternativa.categoria;
+                    const barra = document.createElement('span');
+                    barra.className = 'ml-barra';
+                    const relleno = document.createElement('span');
+                    relleno.style.width = `${porcentaje}%`;
+                    barra.append(relleno);
+                    const valor = document.createElement('small');
+                    valor.textContent = `${porcentaje} %`;
+                    fila.append(nombre, barra, valor);
+                    lista.append(fila);
+                }
+                salida.replaceChildren(principal, lista);
+                salida.hidden = false;
+            } catch {
+                mensaje('No se pudo conectar con el servicio de ML.');
+            }
+        });
+    })();
+</script>

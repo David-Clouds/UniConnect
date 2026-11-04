@@ -26,6 +26,9 @@
 - **Docker** (build multi-stage)
 - **Git / GitHub** (ramas, Pull Requests, merges)
 - **Render** (despliegue como Web Service)
+- **Redis** (sesiones y caché distribuida en producción)
+- **ML.NET** (clasificación y recomendación de eventos)
+- **QRCoder** (código QR de los tickets)
 
 ---
 
@@ -40,6 +43,9 @@
 - ✅ Publicación de eventos por organizadores.
 - ✅ Panel de organizador (participantes, tickets vendidos, ingresos).
 - ✅ Perfil del estudiante (mis eventos, mis tickets, mis voluntariados).
+- ✅ Recomendaciones personalizadas de eventos con ML.NET.
+- ✅ Asistente que sugiere la categoría de un evento con ML.NET.
+- ✅ API REST de eventos, comunidades, estadísticas y modelos de ML.
 
 ---
 
@@ -91,6 +97,35 @@
 | `Descripcion` | string | Detalle de la causa |
 | `TipoApoyo` | string | Voluntariado, Donación, Colecta |
 | `ImagenUrl` | string? | Imagen de la comunidad |
+
+---
+
+## 🔌 API REST
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/eventos` | Eventos, con filtros `categoria`, `fecha`, `precioMax`, `q` y `limite` |
+| GET | `/api/eventos/{id}` | Detalle de un evento |
+| GET | `/api/eventos/categorias` | Categorías disponibles |
+| GET | `/api/comunidades` | Iniciativas de Join Us (filtro `tipo`) |
+| GET | `/api/comunidades/{id}` | Detalle de una iniciativa |
+| GET | `/api/estadisticas` | Totales de la plataforma, en caché 60 s (Redis en producción, cabecera `X-Cache`) |
+| GET / POST | `/api/ml/clasificar` | Sugiere la categoría de un evento a partir de su título y descripción |
+| GET | `/api/ml/recomendaciones` | Eventos recomendados para el estudiante con sesión (o populares sin sesión) |
+| GET | `/api/ml/estado` | Algoritmos, datos de entrenamiento y métricas de los modelos |
+
+---
+
+## 🤖 Machine Learning (ML.NET)
+
+| Modelo | Algoritmo | Dónde se usa |
+|---|---|---|
+| **Clasificación** de eventos por categoría | `SdcaMaximumEntropy` (multiclase) sobre texto con `FeaturizeText` | Panel del organizador → *Asistente de categoría* |
+| **Recomendación** de eventos | `Matrix Factorization` (estudiante × categoría → interés) | Inicio → *Recomendados para ti* |
+
+- Los modelos se entrenan al iniciar la aplicación y se reentrenan cada 15 minutos con los eventos y tickets reales de la base, sumados a un conjunto base de entrenamiento.
+- Un estudiante sin tickets recibe los eventos más populares; al inscribirse a su primer evento, el modelo se reentrena y empieza a personalizar.
+- Si un modelo no está disponible, la aplicación sigue funcionando sin él.
 
 ---
 
