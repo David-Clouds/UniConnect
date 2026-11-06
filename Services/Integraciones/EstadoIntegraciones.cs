@@ -1,11 +1,14 @@
+using System.Text.RegularExpressions;
+
 namespace UniConnect.Services.Integraciones;
 
 /// <summary>
 /// Contadores y últimos errores de los servicios externos (CloudAMQP, PieHost y Algolia).
 /// Se consultan en /api/integraciones para verificar en Render que todo esté conectado.
-/// Nunca guarda claves ni datos personales.
+/// Nunca guarda claves ni datos personales: los errores se resumen antes de guardarse,
+/// porque /api/integraciones es público. El detalle completo queda solo en los logs del servidor.
 /// </summary>
-public sealed class EstadoIntegraciones
+public sealed partial class EstadoIntegraciones
 {
     private long _publicados, _consumidos, _procesadosLocal, _notificaciones;
     private volatile bool _rabbitConectado;
@@ -20,9 +23,9 @@ public sealed class EstadoIntegraciones
     public void NotificacionEnviada() => Interlocked.Increment(ref _notificaciones);
 
     public void RabbitConectado(bool conectado) => _rabbitConectado = conectado;
-    public void ErrorRabbit(string? error) => _errorRabbit = Recortar(error);
-    public void ErrorPieHost(string? error) => _errorPieHost = Recortar(error);
-    public void ErrorAlgolia(string? error) => _errorAlgolia = Recortar(error);
+    public void ErrorRabbit(string? error) => _errorRabbit = ResumirRabbit(error);
+    public void ErrorPieHost(string? error) => _errorPieHost = Limpiar(error);
+    public void ErrorAlgolia(string? error) => _errorAlgolia = Limpiar(error);
 
     public void IndexacionCompletada(int registros)
     {
@@ -48,8 +51,43 @@ public sealed class EstadoIntegraciones
             new EstadoAlgoliaDto(algoliaBusqueda, algoliaIndexacion, _registrosIndexados, ultimaIndexacion, _errorAlgolia));
     }
 
-    private static string? Recortar(string? texto) =>
-        texto is null ? null : texto.Length <= 300 ? texto : texto[..300];
+    // Los mensajes del broker pueden incluir el vhost u otros datos de la URL: solo se conserva el código.
+    private static string? ResumirRabbit(string? error)
+    {
+        if (error is null) return null;
+
+        var codigo = CodigoAmqp().Match(error);
+        if (!codigo.Success)
+            return "No se pudo conectar o publicar en CloudAMQP. Revisa CloudAmqp:Url (detalle en los logs del servidor).";
+
+        var motivo = MotivoAmqp().Match(error);
+        var pista = codigo.Groups[1].Value switch
+        {
+            "530" => "el vhost (la parte final de la URL, después de la última /) no es correcto",
+            "403" => "el usuario o la contraseña de la URL no son correctos",
+            _ => "revisa la URL de CloudAMQP"
+        };
+        return $"RabbitMQ rechazó la conexión (código {codigo.Groups[1].Value}"
+            + (motivo.Success ? $", {motivo.Groups[1].Value}" : string.Empty)
+            + $"): {pista}. Detalle en los logs del servidor.";
+    }
+
+    // Quita cualquier URL (podría llevar usuario y contraseña) y limita el largo.
+    private static string? Limpiar(string? texto)
+    {
+        if (texto is null) return null;
+        texto = UrlConCredenciales().Replace(texto, "[url]");
+        return texto.Length <= 300 ? texto : texto.Substring(0, 300);
+    }
+
+    [GeneratedRegex(@"code=(\d{3})")]
+    private static partial Regex CodigoAmqp();
+
+    [GeneratedRegex(@"text='([A-Z_]+)")]
+    private static partial Regex MotivoAmqp();
+
+    [GeneratedRegex(@"[a-zA-Z][a-zA-Z0-9+.-]*://[^\s'""]+")]
+    private static partial Regex UrlConCredenciales();
 }
 
 public sealed record EstadoIntegracionesDto(EstadoCloudAmqpDto CloudAmqp, EstadoPieHostDto PieHost, EstadoAlgoliaDto Algolia);
