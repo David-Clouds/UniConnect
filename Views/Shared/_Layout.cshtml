@@ -1,16 +1,29 @@
 @using UniConnect.Controllers
+@using UniConnect.Services.TiempoReal
+@inject UniConnect.Services.ContextoUsuario ContextoUsuario
+@inject NotificadorPieHost PieHost
 @{
+    var usuario = await ContextoUsuario.ObtenerAsync();
     var nombreUsuario = Context.Session.GetString(CuentaController.SesionEstudianteNombre) ?? "Usuario";
     var rolUsuario = Context.Session.GetString(CuentaController.SesionRol) ?? "Estudiante";
     var iniciales = string.Concat(nombreUsuario.Split(' ', StringSplitOptions.RemoveEmptyEntries)
         .Take(2).Select(p => char.ToUpperInvariant(p[0])));
     if (string.IsNullOrWhiteSpace(iniciales)) { iniciales = "US"; }
+
+    // Notificaciones en vivo (PieHost): solo para quien puede ver el Panel Organizador.
+    var canalesNotificacion = new List<string>();
+    if (usuario is not null && PieHost.Configurado)
+    {
+        if (usuario.EsAdministrador) canalesNotificacion.Add(NotificadorPieHost.CanalAdministracion);
+        else canalesNotificacion.AddRange(usuario.OrganizadorIds.Select(NotificadorPieHost.CanalOrganizador));
+    }
 }
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#160404" />
     <title>@ViewData["Title"] - UniConnect</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
@@ -18,6 +31,7 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
     <div class="app-shell">
         <aside class="sidebar">
             <div class="sidebar-logo">
@@ -28,39 +42,53 @@
                 </div>
             </div>
 
-            <nav class="sidebar-nav">
+            <nav class="sidebar-nav" aria-label="Navegación principal">
                 <p class="sidebar-section-label">Navegación</p>
                 <a class="nav-item @(ViewBag.Active == "home" ? "active" : "")" asp-controller="Eventos" asp-action="Index">
-                    <span>🏠</span> Inicio
+                    <span class="nav-icon" aria-hidden="true">🏠</span><span class="nav-text">Inicio</span><span class="nav-short">Inicio</span>
                 </a>
                 <a class="nav-item nav-item-teal @(ViewBag.Active == "joinus" ? "active" : "")" asp-controller="Comunidad" asp-action="Index">
-                    <span>🤝</span> Join Us <span class="badge-impacto">Impacto</span>
+                    <span class="nav-icon" aria-hidden="true">🤝</span><span class="nav-text">Join Us</span><span class="nav-short">Join Us</span>
+                    <span class="badge-impacto">Impacto</span>
                 </a>
                 <a class="nav-item @(ViewBag.Active == "ticket" ? "active" : "")" asp-controller="Eventos" asp-action="MisTickets">
-                    <span>🎟️</span> Mis Tickets
+                    <span class="nav-icon" aria-hidden="true">🎟️</span><span class="nav-text">Mis Tickets</span><span class="nav-short">Tickets</span>
                 </a>
-                <a class="nav-item @(ViewBag.Active == "organizer" ? "active" : "")" asp-controller="Organizador" asp-action="Panel">
-                    <span>📊</span> Panel Organizador
-                </a>
+                @if (usuario?.PuedeVerPanel == true)
+                {
+                    <a class="nav-item @(ViewBag.Active == "organizer" ? "active" : "")" asp-controller="Organizador" asp-action="Panel">
+                        <span class="nav-icon" aria-hidden="true">📊</span><span class="nav-text">Panel Organizador</span><span class="nav-short">Panel</span>
+                    </a>
+                }
                 <a class="nav-item @(ViewBag.Active == "profile" ? "active" : "")" asp-controller="Perfil" asp-action="Index">
-                    <span>👤</span> Mi Perfil
+                    <span class="nav-icon" aria-hidden="true">👤</span><span class="nav-text">Mi Perfil</span><span class="nav-short">Perfil</span>
                 </a>
             </nav>
 
             <div class="sidebar-user">
-                <a asp-controller="Perfil" asp-action="Index" class="user-card">
-                    <div class="user-avatar">@iniciales</div>
-                    <div>
-                        <p class="user-name">@nombreUsuario</p>
-                        <p class="user-role">@rolUsuario</p>
-                    </div>
-                </a>
-                <a asp-controller="Cuenta" asp-action="Login" class="logout-link">↩ Cerrar sesión</a>
+                @if (usuario is not null)
+                {
+                    <a asp-controller="Perfil" asp-action="Index" class="user-card">
+                        <div class="user-avatar">@iniciales</div>
+                        <div>
+                            <p class="user-name">@nombreUsuario</p>
+                            <p class="user-role">@rolUsuario</p>
+                        </div>
+                    </a>
+                    <a asp-controller="Cuenta" asp-action="Logout" class="logout-link">↩ Cerrar sesión</a>
+                }
+                else
+                {
+                    <a asp-controller="Cuenta" asp-action="Login" class="login-link">Iniciar sesión</a>
+                }
             </div>
         </aside>
 
         <div class="main-area">
             <header class="topbar">
+                <a class="topbar-brand" asp-controller="Eventos" asp-action="Index" aria-label="UniConnect, ir al inicio">
+                    @await Html.PartialAsync("_UsmpShield")
+                </a>
                 <div class="topbar-title">
                     <h1>@ViewData["Title"]</h1>
                     @if (ViewData["Subtitle"] != null)
@@ -68,15 +96,59 @@
                         <p>@ViewData["Subtitle"]</p>
                     }
                 </div>
-                <input type="text" class="search-input" placeholder="Buscar eventos..." />
-                <div class="user-avatar small">@iniciales</div>
+
+                <div class="buscador" role="search">
+                    <label for="buscador-input" class="visually-hidden">Buscar eventos y voluntariados</label>
+                    <input id="buscador-input" type="search" class="search-input" placeholder="Buscar eventos..."
+                           autocomplete="off" spellcheck="false" maxlength="80"
+                           role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="buscador-resultados"
+                           data-endpoint="@Url.Content("~/api/buscar")" />
+                    <div id="buscador-resultados" class="buscador-panel" role="listbox" aria-label="Resultados de búsqueda" hidden></div>
+                </div>
+
+                @if (canalesNotificacion.Count > 0)
+                {
+                    <div class="notif" data-piehost-cluster="@PieHost.ClusterPublico" data-piehost-key="@PieHost.ApiKeyPublica"
+                         data-piehost-canales="@string.Join(",", canalesNotificacion)">
+                        <button type="button" class="notif-btn" aria-expanded="false" aria-controls="notif-panel" aria-label="Notificaciones">
+                            <span aria-hidden="true">🔔</span>
+                            <span class="notif-count" hidden>0</span>
+                        </button>
+                        <div id="notif-panel" class="notif-panel" hidden>
+                            <div class="notif-head">
+                                <strong>Notificaciones</strong>
+                                <span class="notif-estado">Conectando…</span>
+                            </div>
+                            <ul class="notif-list">
+                                <li class="notif-empty">Aquí aparecerán los tickets vendidos en tiempo real.</li>
+                            </ul>
+                        </div>
+                    </div>
+                }
+
+                @if (usuario is not null)
+                {
+                    <a class="user-avatar small" asp-controller="Perfil" asp-action="Index" aria-label="Mi perfil">@iniciales</a>
+                    <a class="topbar-salir" asp-controller="Cuenta" asp-action="Logout" aria-label="Cerrar sesión" title="Cerrar sesión">↩</a>
+                }
+                else
+                {
+                    <a class="topbar-login" asp-controller="Cuenta" asp-action="Login">Ingresar</a>
+                }
             </header>
-            <main class="content">
+            <main id="contenido" class="content" tabindex="-1">
                 @RenderBody()
             </main>
         </div>
     </div>
+    <div class="toast-region" aria-live="polite" aria-atomic="false"></div>
+
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/buscador.js" asp-append-version="true" defer></script>
+    @if (canalesNotificacion.Count > 0)
+    {
+        <script src="~/js/notificaciones.js" asp-append-version="true" defer></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

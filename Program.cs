@@ -1,5 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using UniConnect.Data;
+using UniConnect.Services;
+using UniConnect.Services.Busqueda;
+using UniConnect.Services.Integraciones;
+using UniConnect.Services.Mensajeria;
+using UniConnect.Services.TiempoReal;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +37,22 @@ builder.Services.AddSession(options =>
 // Los modelos se entrenan en segundo plano al iniciar y se reentrenan cada 15 minutos.
 builder.Services.AddSingleton<UniConnect.Services.ML.ServicioMl>();
 builder.Services.AddHostedService<UniConnect.Services.ML.EntrenamientoMlService>();
+
+// Usuario con sesión y sus permisos (layout: menú y notificaciones).
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ContextoUsuario>();
+
+// Integraciones externas. Todas son opcionales: si faltan sus claves, la app funciona igual.
+//  • CloudAMQP (RabbitMQ): cola "ticket.emitido"            → CloudAmqp__Url
+//  • PieHost (WebSocket): avisos en vivo al organizador     → PieHost__ClusterId, PieHost__ApiKey, PieHost__ApiSecret
+//  • Algolia: buscador de la barra superior                 → Algolia__AppId, Algolia__SearchKey, Algolia__AdminKey
+builder.Services.AddSingleton<EstadoIntegraciones>();
+builder.Services.AddSingleton<NotificadorPieHost>();
+builder.Services.AddSingleton<ProcesadorTicketEmitido>();
+builder.Services.AddSingleton<PublicadorTickets>();
+builder.Services.AddHostedService<ConsumidorTicketsService>();
+builder.Services.AddSingleton<ServicioBusqueda>();
+builder.Services.AddHostedService<IndexacionBusquedaService>();
 
 var app = builder.Build();
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniConnect.Data;
 using UniConnect.Models;
+using UniConnect.Services.Mensajeria;
 using UniConnect.ViewModels;
 
 namespace UniConnect.Controllers;
@@ -10,8 +11,13 @@ namespace UniConnect.Controllers;
 public class TicketsController : Controller
 {
     private readonly AppDbContext _context;
+    private readonly PublicadorTickets _publicador;
 
-    public TicketsController(AppDbContext context) => _context = context;
+    public TicketsController(AppDbContext context, PublicadorTickets publicador)
+    {
+        _context = context;
+        _publicador = publicador;
+    }
 
     private async Task<int?> ObtenerEstudianteVerificadoAsync(CancellationToken cancellationToken)
     {
@@ -128,18 +134,32 @@ public class TicketsController : Controller
         return null;
     }
 
-    private async Task<int> EmitirTicketAsync(int estudianteId, int eventoId, CancellationToken cancellationToken)
+    private async Task<int> EmitirTicketAsync(int estudianteId, Evento evento, CancellationToken cancellationToken)
     {
         var ticket = new Ticket
         {
             EstudianteId = estudianteId,
-            EventoId = eventoId,
+            EventoId = evento.Id,
             FechaCompra = DateTime.Now,
             // Valor aleatorio e impredecible; es lo que se codifica en la imagen QR.
             CodigoQR = "UC-" + Guid.NewGuid().ToString("N")
         };
         _context.Tickets.Add(ticket);
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Mensaje para CloudAMQP: el consumidor avisa al organizador por PieHost y reentrena ML.NET.
+        var totalTickets = await _context.Tickets.CountAsync(t => t.EventoId == evento.Id, cancellationToken);
+        await _publicador.PublicarAsync(new TicketEmitidoMensaje(
+            MensajeId: Guid.NewGuid(),
+            TicketId: ticket.Id,
+            EventoId: evento.Id,
+            OrganizadorId: evento.OrganizadorId,
+            TituloEvento: evento.Titulo,
+            Categoria: evento.Categoria,
+            Precio: evento.Precio,
+            TotalTicketsEvento: totalTickets,
+            EmitidoEnUtc: DateTime.UtcNow));
+
         return ticket.Id;
     }
 
@@ -206,7 +226,7 @@ public class TicketsController : Controller
             return RedirectToAction(nameof(Checkout), new { id });
         }
 
-        var ticketId = await EmitirTicketAsync(estudianteId.Value, evento.Id, cancellationToken);
+        var ticketId = await EmitirTicketAsync(estudianteId.Value, evento, cancellationToken);
         TempData["TicketMensaje"] = $"¡Compra simulada con {metodoPago} exitosa! Este es tu ticket con código QR.";
         return RedirectToAction(nameof(Detalle), new { id = ticketId });
     }
@@ -233,7 +253,7 @@ public class TicketsController : Controller
         var rechazo = await ValidarEmisionAsync(estudianteId.Value, evento, cancellationToken);
         if (rechazo is not null) return rechazo;
 
-        var ticketId = await EmitirTicketAsync(estudianteId.Value, evento.Id, cancellationToken);
+        var ticketId = await EmitirTicketAsync(estudianteId.Value, evento, cancellationToken);
         TempData["TicketMensaje"] = "¡Registro exitoso! Este es tu ticket con código QR.";
         return RedirectToAction(nameof(Detalle), new { id = ticketId });
     }

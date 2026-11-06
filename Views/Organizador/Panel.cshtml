@@ -5,14 +5,14 @@
     var cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
     var maximo = Math.Max(1, Model.EmisionesDiarias.Select(d => d.Cantidad).DefaultIfEmpty(0).Max());
     var indicadores = new[] {
-        (Etiqueta: "Eventos registrados", Valor: Model.TotalEventos, Icono: "📅", Estilo: "red"),
-        (Etiqueta: "Tickets emitidos", Valor: Model.TotalTickets, Icono: "🎟", Estilo: "green"),
-        (Etiqueta: "Participantes únicos", Valor: Model.ParticipantesUnicos, Icono: "👥", Estilo: "blue"),
-        (Etiqueta: "Eventos próximos", Valor: Model.EventosProximos, Icono: "📆", Estilo: "amber")
+        (Etiqueta: "Eventos registrados", Valor: Model.TotalEventos, Icono: "📅", Estilo: "red", Clave: "eventos"),
+        (Etiqueta: "Tickets emitidos", Valor: Model.TotalTickets, Icono: "🎟", Estilo: "green", Clave: "tickets"),
+        (Etiqueta: "Participantes únicos", Valor: Model.ParticipantesUnicos, Icono: "👥", Estilo: "blue", Clave: "participantes"),
+        (Etiqueta: "Eventos próximos", Valor: Model.EventosProximos, Icono: "📆", Estilo: "amber", Clave: "proximos")
     };
 }
 <link rel="stylesheet" href="~/css/organizador.css" asp-append-version="true" />
-<section class="organizador-page" aria-label="Panel del Organizador">
+<section class="organizador-page" aria-label="Panel del Organizador" data-organizador-id="@Model.OrganizadorSeleccionadoId">
     @if (Model.AccesoDisponible)
     {
         <section class="organizador-surface" aria-label="Selección de organizador">
@@ -51,7 +51,7 @@
         {
             <div class="organizador-stat organizador-stat-@indicador.Estilo">
                 <div><span>@indicador.Etiqueta</span><span aria-hidden="true">@indicador.Icono</span></div>
-                <strong>@(Model.AccesoDisponible ? indicador.Valor.ToString("N0", cultura) : "—")</strong>
+                <strong data-kpi="@indicador.Clave" data-valor="@indicador.Valor">@(Model.AccesoDisponible ? indicador.Valor.ToString("N0", cultura) : "—")</strong>
                 @if (!Model.AccesoDisponible) { <small>Acceso pendiente</small> }
             </div>
         }
@@ -132,3 +132,24 @@
         }
     </section>
 </section>
+@section Scripts {
+    <script>
+        // Tiempo real: cuando PieHost avisa de un ticket de este organizador, se actualiza el indicador.
+        document.addEventListener('uniconnect:ticket-emitido', (evento) => {
+            const pagina = document.querySelector('.organizador-page');
+            const kpi = document.querySelector('[data-kpi="tickets"]');
+            if (!pagina || !kpi || String(evento.detail.organizadorId) !== pagina.dataset.organizadorId) return;
+
+            const valor = (parseInt(kpi.dataset.valor || '0', 10) || 0) + 1;
+            kpi.dataset.valor = String(valor);
+            kpi.textContent = valor.toLocaleString('es-PE');
+
+            const tarjeta = kpi.closest('.organizador-stat');
+            if (tarjeta) {
+                tarjeta.classList.remove('kpi-actualizado');
+                void tarjeta.offsetWidth; // reinicia la animación
+                tarjeta.classList.add('kpi-actualizado');
+            }
+        });
+    </script>
+}
