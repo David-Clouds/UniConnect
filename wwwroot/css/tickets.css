@@ -50,18 +50,7 @@
     .ticket-qr-side { border-left: 0; border-top: 1px solid var(--border); flex-direction: row; padding: 10px; }
     .ticket-qr-side .ticket-qr-placeholder { width: 40px; height: 40px; }
 }
-/* Scope the existing shell adaptation to this module; shared files stay intact. */
 @media (max-width: 600px) {
-    body:has(.tickets-page) .app-shell { flex-direction: column; }
-    body:has(.tickets-page) .sidebar { position: static; width: 100%; }
-    body:has(.tickets-page) .sidebar-user { display: none; }
-    body:has(.tickets-page) .sidebar-nav { display: flex; flex-wrap: wrap; gap: 4px; }
-    body:has(.tickets-page) .sidebar-section-label { width: 100%; }
-    body:has(.tickets-page) .nav-item { font-size: 12px; padding: 8px; }
-    body:has(.tickets-page) .main-area { margin-left: 0; min-width: 0; }
-    body:has(.tickets-page) .topbar { padding: 16px; }
-    body:has(.tickets-page) .search-input { display: none; }
-    body:has(.tickets-page) .content { padding: 16px; }
     .tickets-stats { grid-template-columns: 1fr; }
     .tickets-stats > div { display: flex; align-items: center; gap: 12px; }
 }

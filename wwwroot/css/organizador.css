@@ -61,18 +61,7 @@
     .organizador-chart { gap: 6px; }
     .organizador-page table { min-width: 520px; }
 }
-/* Adapt the existing shell only on this module's pages. */
 @media (max-width: 600px) {
-    body:has(.organizador-page) .app-shell { flex-direction: column; }
-    body:has(.organizador-page) .sidebar { position: static; width: 100%; }
-    body:has(.organizador-page) .sidebar-user { display: none; }
-    body:has(.organizador-page) .sidebar-nav { display: flex; flex-wrap: wrap; gap: 4px; }
-    body:has(.organizador-page) .sidebar-section-label { width: 100%; }
-    body:has(.organizador-page) .nav-item { padding: 8px; font-size: 12px; }
-    body:has(.organizador-page) .main-area { margin-left: 0; min-width: 0; }
-    body:has(.organizador-page) .topbar { padding: 16px; }
-    body:has(.organizador-page) .search-input { display: none; }
-    body:has(.organizador-page) .content { padding: 16px; }
     .organizador-page { gap: 20px; }
     .organizador-stat { padding: 14px; }
 }

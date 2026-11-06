@@ -26,16 +26,3 @@
 @media (max-width: 700px) {
     .checkout-grid { grid-template-columns: 1fr; }
 }
-/* Misma adaptación móvil del shell que usa el módulo de tickets. */
-@media (max-width: 600px) {
-    body:has(.checkout-page) .app-shell { flex-direction: column; }
-    body:has(.checkout-page) .sidebar { position: static; width: 100%; }
-    body:has(.checkout-page) .sidebar-user { display: none; }
-    body:has(.checkout-page) .sidebar-nav { display: flex; flex-wrap: wrap; gap: 4px; }
-    body:has(.checkout-page) .sidebar-section-label { width: 100%; }
-    body:has(.checkout-page) .nav-item { font-size: 12px; padding: 8px; }
-    body:has(.checkout-page) .main-area { margin-left: 0; min-width: 0; }
-    body:has(.checkout-page) .topbar { padding: 16px; }
-    body:has(.checkout-page) .search-input { display: none; }
-    body:has(.checkout-page) .content { padding: 16px; }
-}

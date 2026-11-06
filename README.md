@@ -6,6 +6,10 @@
 ![EF Core](https://img.shields.io/badge/EF%20Core-SQLite-003B57?logo=sqlite&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
 ![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-cach%C3%A9%20y%20sesiones-DC382D?logo=redis&logoColor=white)
+![RabbitMQ](https://img.shields.io/badge/CloudAMQP-RabbitMQ-FF6600?logo=rabbitmq&logoColor=white)
+![Algolia](https://img.shields.io/badge/Algolia-b%C3%BAsqueda-003DFF?logo=algolia&logoColor=white)
+![ML.NET](https://img.shields.io/badge/ML.NET-clasificaci%C3%B3n%20y%20recomendaci%C3%B3n-512BD4?logo=dotnet&logoColor=white)
 
 ---
 
@@ -15,6 +19,9 @@
 |---|---|
 | 📦 Repositorio GitHub | https://github.com/David-Clouds/UniConnect |
 | 🎨 Diseño en Figma | https://www.figma.com/make/yGW4sb2DzXZM7zECkchGIt/UniConnect-web-app-design?t=JQlVb2r0avENCNDH-1 |
+| 🌐 Aplicación en Render | https://uniconnect-8jmc.onrender.com |
+| 🩺 Estado de los servicios | https://uniconnect-8jmc.onrender.com/api/integraciones |
+| 🤖 Estado de los modelos ML | https://uniconnect-8jmc.onrender.com/api/ml/estado |
 
 
 ---
@@ -29,6 +36,9 @@
 - **Redis** (sesiones y caché distribuida en producción)
 - **ML.NET** (clasificación y recomendación de eventos)
 - **QRCoder** (código QR de los tickets)
+- **CloudAMQP / RabbitMQ** (cola de mensajes `ticket.emitido`)
+- **PieHost / PieSocket** (WebSocket: notificaciones en tiempo real)
+- **Algolia** (buscador instantáneo de eventos y Join Us)
 
 ---
 
@@ -45,7 +55,37 @@
 - ✅ Perfil del estudiante (mis eventos, mis tickets, mis voluntariados).
 - ✅ Recomendaciones personalizadas de eventos con ML.NET.
 - ✅ Asistente que sugiere la categoría de un evento con ML.NET.
-- ✅ API REST de eventos, comunidades, estadísticas y modelos de ML.
+- ✅ API REST de eventos, comunidades, estadísticas, búsqueda y modelos de ML.
+- ✅ Buscador instantáneo en la barra superior con **Algolia** (tolera errores de tipeo).
+- ✅ Notificaciones en tiempo real para organizadores (**CloudAMQP + PieHost**): campana, aviso emergente y contador del panel.
+- ✅ Diseño **responsive**: en el celular el menú lateral pasa a una barra inferior.
+- ✅ El menú solo muestra el *Panel Organizador* a quien tiene permiso.
+
+---
+
+## 🏗️ Arquitectura
+
+```mermaid
+flowchart LR
+    E([Estudiante]) -->|compra o se registra| W[UniConnect<br/>ASP.NET Core MVC]
+    W -->|guarda el ticket| DB[(SQLite)]
+    W <-->|sesión y caché| R[(Redis)]
+    W -->|publica ticket.emitido| Q[[CloudAMQP<br/>RabbitMQ]]
+    Q -->|consumidor en segundo plano| C[ConsumidorTicketsService]
+    C -->|reentrena| ML[ML.NET]
+    C -->|API de publicación| P[PieHost]
+    P -->|WebSocket| O([Organizador:<br/>campana y panel en vivo])
+    W -->|indexa eventos y Join Us| A[(Algolia)]
+    E -->|busca| W
+    W -->|consulta /api/buscar| A
+```
+
+1. Al emitirse un ticket, la app lo guarda y publica el mensaje `ticket.emitido` en la cola **`uniconnect.tickets.emitidos`** de CloudAMQP.
+2. `ConsumidorTicketsService` lee la cola, pide a **ML.NET** reentrenar las recomendaciones y avisa por **PieHost** en los canales `uniconnect-org-{id}` (organizador) y `uniconnect-admin` (administradores).
+3. El navegador del organizador recibe el aviso por **WebSocket**: suena la campana, aparece un aviso emergente y sube el contador *Tickets emitidos* del panel sin recargar.
+4. Cada 30 minutos (y al iniciar) los eventos e iniciativas se indexan en **Algolia**; la barra superior consulta `/api/buscar`.
+
+Cada integración es **opcional**: sin sus claves, la app funciona igual (los tickets se procesan sin cola y la búsqueda usa la base de datos). Los avisos de PieHost no incluyen datos personales de los estudiantes.
 
 ---
 
@@ -113,6 +153,8 @@
 | GET / POST | `/api/ml/clasificar` | Sugiere la categoría de un evento a partir de su título y descripción |
 | GET | `/api/ml/recomendaciones` | Eventos recomendados para el estudiante con sesión (o populares sin sesión) |
 | GET | `/api/ml/estado` | Algoritmos, datos de entrenamiento y métricas de los modelos |
+| GET | `/api/buscar?q=` | Búsqueda de eventos e iniciativas (Algolia, o la base de datos como respaldo) |
+| GET | `/api/integraciones` | Estado de CloudAMQP, PieHost y Algolia: configurado, conectado, contadores y último error (sin claves) |
 
 ---
 
@@ -126,6 +168,31 @@
 - Los modelos se entrenan al iniciar la aplicación y se reentrenan cada 15 minutos con los eventos y tickets reales de la base, sumados a un conjunto base de entrenamiento.
 - Un estudiante sin tickets recibe los eventos más populares; al inscribirse a su primer evento, el modelo se reentrena y empieza a personalizar.
 - Si un modelo no está disponible, la aplicación sigue funcionando sin él.
+
+---
+
+## 🔐 Configuración de servicios externos
+
+Las claves **nunca** van en el código ni en GitHub. En tu PC se guardan con *user-secrets* y en Render como variables de entorno (el `__` equivale al `:` de la configuración).
+
+| Variable en Render | Servicio | Dónde se obtiene |
+|---|---|---|
+| `Redis__ConnectionString` | Redis | *Internal Key Value URL* de Render, **sin** `redis://` y con `,abortConnect=false` |
+| `CloudAmqp__Url` | CloudAMQP | Consola de CloudAMQP → instancia → *AMQP URL* (`amqps://...`) |
+| `PieHost__ClusterId` | PieHost | Panel de PieHost → cluster → *Cluster ID* |
+| `PieHost__ApiKey` | PieHost | Panel de PieHost → *API Key* (pública: la usa el navegador) |
+| `PieHost__ApiSecret` | PieHost | Panel de PieHost → *API Secret* (solo servidor) |
+| `Algolia__AppId` | Algolia | *Settings → API Keys → Application ID* |
+| `Algolia__SearchKey` | Algolia | *Search API Key* (solo lectura) |
+| `Algolia__AdminKey` | Algolia | *Admin API Key* (solo servidor, para indexar) |
+| `Algolia__IndexName` | Algolia | Opcional; por defecto `uniconnect` |
+
+```bash
+dotnet user-secrets init
+dotnet user-secrets set "CloudAmqp:Url" "amqps://..."
+dotnet user-secrets set "PieHost:ClusterId" "..."
+# ...igual para el resto de claves
+```
 
 ---
 
@@ -194,15 +261,24 @@ Production: cambiar de entorno no elimina cuentas ya creadas.
 | Rama desplegada | `main` |
 | Puerto | Variable de entorno `PORT` |
 | Base de datos | SQLite (`uniconnect.db`); el repositorio incluye un archivo inicial, no publiques tu base local modificada |
+| Variables de entorno | Las de la sección [Configuración de servicios externos](#-configuración-de-servicios-externos) |
+| Verificación | `/api/integraciones` y `/api/ml/estado` |
 
 ---
 
 ## 🌳 Estructura de ramas (Git)
+
+```
 main
 ├── feature/login
-├── feature/eventos
+├── feature/funcionalidades
 ├── feature/joinus
-└── feature/organizador
-
+├── feature/mis-tickets
+├── feature/panel-organizador
+├── feature/checkout-qr
+├── feature/api-rest
+├── feature/ml-net
+└── feature/tiempo-real-busqueda
+```
 
 Cada integrante trabaja en su rama y abre un Pull Request hacia `main` para integrar cambios.
