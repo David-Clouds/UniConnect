@@ -160,4 +160,73 @@ public class OrganizadorController : Controller
         TempData["AsignacionMensaje"] = model.EstudianteId.HasValue ? "Responsable actualizado." : "Asignación revocada.";
         return RedirectToAction(nameof(Responsables));
     }
+
+    // ═══════════════ Crear evento (solo Administrador General) ═══════════════
+
+    [HttpGet("/Organizador/CrearEvento")]
+    public async Task<IActionResult> CrearEvento(int? organizadorId, CancellationToken cancellationToken)
+    {
+        var estudiante = await ObtenerEstudianteAsync(cancellationToken);
+        if (estudiante is null) return Login(nameof(CrearEvento));
+        if (!estudiante.EsAdministradorGeneral) return StatusCode(StatusCodes.Status403Forbidden);
+
+        ViewBag.Active = "organizer";
+        var model = new CrearEventoViewModel
+        {
+            OrganizadorId = organizadorId,
+            // Por defecto: dentro de una semana a las 18:00.
+            Fecha = DateTime.Today.AddDays(7).AddHours(18)
+        };
+        model.Organizadores = await Opciones(_context.Organizadores.AsNoTracking()).ToListAsync(cancellationToken);
+        return View(model);
+    }
+
+    [HttpPost("/Organizador/CrearEvento")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CrearEvento(CrearEventoViewModel model,
+        [FromServices] Services.Busqueda.ServicioBusqueda busqueda,
+        [FromServices] Services.Chatbot.ServicioChatbot chatbot,
+        [FromServices] ILogger<OrganizadorController> logger,
+        CancellationToken cancellationToken)
+    {
+        var estudiante = await ObtenerEstudianteAsync(cancellationToken);
+        if (estudiante is null) return Login(nameof(CrearEvento));
+        if (!estudiante.EsAdministradorGeneral) return StatusCode(StatusCodes.Status403Forbidden);
+        ViewBag.Active = "organizer";
+
+        if (model.OrganizadorId is > 0 && !await _context.Organizadores.AsNoTracking()
+                .AnyAsync(o => o.Id == model.OrganizadorId.Value, cancellationToken))
+            ModelState.AddModelError(nameof(model.OrganizadorId), "El organizador elegido no existe.");
+
+        if (!ModelState.IsValid)
+        {
+            model.Organizadores = await Opciones(_context.Organizadores.AsNoTracking()).ToListAsync(cancellationToken);
+            return View(model);
+        }
+
+        var evento = new Evento
+        {
+            Titulo = model.Titulo.Trim(),
+            Categoria = model.Categoria,
+            Fecha = model.Fecha!.Value,
+            Precio = decimal.Round(model.Precio!.Value, 2),
+            Descripcion = string.IsNullOrWhiteSpace(model.Descripcion) ? null : model.Descripcion.Trim(),
+            ImagenUrl = string.IsNullOrWhiteSpace(model.ImagenUrl) ? null : model.ImagenUrl.Trim(),
+            OrganizadorId = model.OrganizadorId!.Value
+        };
+        _context.Eventos.Add(evento);
+        await _context.SaveChangesAsync(cancellationToken);
+        chatbot.InvalidarCatalogo();
+
+        // El buscador (Algolia) se reindexa cada 30 min; se adelanta para que el evento aparezca ya.
+        // Es opcional: si falla, el evento igual queda creado.
+        try { await busqueda.IndexarAsync(_context, cancellationToken); }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "No se pudo reindexar la búsqueda tras crear el evento {Id}.", evento.Id);
+        }
+
+        TempData["EventoCreadoMensaje"] = $"Evento «{evento.Titulo}» publicado correctamente.";
+        return Redirect($"/Organizador/Panel?organizadorId={evento.OrganizadorId}");
+    }
 }

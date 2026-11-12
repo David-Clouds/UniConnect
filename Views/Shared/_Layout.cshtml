@@ -28,6 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/chatbot.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -142,9 +143,11 @@
         </div>
     </div>
     <div class="toast-region" aria-live="polite" aria-atomic="false"></div>
+    <partial name="_Chatbot" />
 
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/buscador.js" asp-append-version="true" defer></script>
+    <script src="~/js/chatbot.js" asp-append-version="true" defer></script>
     @if (canalesNotificacion.Count > 0)
     {
         <script src="~/js/notificaciones.js" asp-append-version="true" defer></script>

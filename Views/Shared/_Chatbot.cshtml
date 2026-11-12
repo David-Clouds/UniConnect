@@ -1,0 +1,29 @@
+@* Chatbot "Uni": botón flotante + ventana de chat. La lógica está en wwwroot/js/chatbot.js. *@
+<div class="chatbot" data-endpoint="@Url.Content("~/api/chatbot")" data-base="@Url.Content("~/")">
+    <section id="chatbot-ventana" class="chatbot-ventana" role="dialog" aria-modal="false" aria-labelledby="chatbot-titulo" hidden>
+        <header class="chatbot-cabecera">
+            <span class="chatbot-avatar" aria-hidden="true">🤖</span>
+            <div>
+                <h2 id="chatbot-titulo">Uni · Asistente UniConnect</h2>
+                <p>Eventos, tickets y Join Us</p>
+            </div>
+            <button type="button" class="chatbot-limpiar" title="Nueva conversación" aria-label="Nueva conversación">⟲</button>
+            <button type="button" class="chatbot-cerrar" aria-label="Cerrar chat">✕</button>
+        </header>
+        <ol class="chatbot-mensajes" aria-live="polite" aria-label="Conversación"></ol>
+        <div class="chatbot-sugerencias" aria-label="Preguntas sugeridas">
+            <button type="button">¿Qué eventos gratis hay?</button>
+            <button type="button">Eventos de esta semana</button>
+            <button type="button">¿Cómo compro un ticket?</button>
+            <button type="button">Quiero hacer voluntariado</button>
+        </div>
+        <form class="chatbot-form">
+            <label for="chatbot-input" class="visually-hidden">Escribe tu mensaje</label>
+            <input id="chatbot-input" type="text" maxlength="1000" autocomplete="off" placeholder="Escribe tu pregunta…" />
+            <button type="submit" class="chatbot-enviar" aria-label="Enviar">➤</button>
+        </form>
+    </section>
+    <button type="button" class="chatbot-boton" aria-expanded="false" aria-controls="chatbot-ventana" aria-label="Abrir asistente virtual">
+        <span class="chatbot-boton-icono" aria-hidden="true">💬</span>
+    </button>
+</div>
