@@ -54,6 +54,25 @@ builder.Services.AddHostedService<ConsumidorTicketsService>();
 builder.Services.AddSingleton<ServicioBusqueda>();
 builder.Services.AddHostedService<IndexacionBusquedaService>();
 
+// Chatbot "Uni" (Claude). Opcional: sin Anthropic__ApiKey responde con reglas simples.
+builder.Services.AddSingleton<UniConnect.Services.Chatbot.ServicioChatbot>();
+// Límite por IP para que el chatbot no se pueda usar de forma abusiva (cuida el costo de la API).
+builder.Services.AddRateLimiter(opciones =>
+{
+    opciones.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    opciones.AddPolicy(UniConnect.Controllers.Api.ChatbotApiController.PoliticaLimite, contexto =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            // Render está detrás de un proxy: la IP real llega en X-Forwarded-For.
+            contexto.Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim() is { Length: > 0 } ip
+                ? ip : contexto.Connection.RemoteIpAddress?.ToString() ?? "desconocido",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -67,6 +86,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseRateLimiter();
 
 app.UseSession();
 

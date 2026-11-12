@@ -1,0 +1,90 @@
+@model UniConnect.ViewModels.CrearEventoViewModel
+@{
+    ViewData["Title"] = "Crear evento";
+    ViewData["Subtitle"] = "Publica un evento nuevo para la comunidad USMP";
+}
+<link rel="stylesheet" href="~/css/organizador.css" asp-append-version="true" />
+<section class="organizador-page" aria-label="Crear evento">
+    <a asp-action="Panel" asp-controller="Organizador" asp-route-organizadorId="@Model.OrganizadorId">← Volver al panel</a>
+
+    <section class="organizador-surface">
+        <div class="organizador-section-header">
+            <div>
+                <h2>Datos del evento</h2>
+                <p>Los campos con * son obligatorios. El evento aparecerá en Inicio apenas lo publiques.</p>
+            </div>
+        </div>
+
+        @if (Model.Organizadores.Count == 0)
+        {
+            <p class="organizador-empty">Primero debe existir al menos un organizador registrado.</p>
+        }
+        else
+        {
+            <form method="post" asp-action="CrearEvento" asp-controller="Organizador" class="evento-form" novalidate>
+                <div asp-validation-summary="ModelOnly" class="evento-form-errores" role="alert"></div>
+
+                <div class="evento-campo evento-campo-ancho">
+                    <label asp-for="Titulo">Título *</label>
+                    <input asp-for="Titulo" maxlength="200" autocomplete="off" placeholder="Ej.: Hackathon USMP 2026" />
+                    <span asp-validation-for="Titulo" class="evento-error"></span>
+                </div>
+
+                <div class="evento-campo">
+                    <label asp-for="Categoria">Categoría *</label>
+                    <select asp-for="Categoria">
+                        <option value="">— Elige una categoría —</option>
+                        @foreach (var categoria in UniConnect.ViewModels.CrearEventoViewModel.Categorias)
+                        {
+                            <option value="@categoria">@categoria</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Categoria" class="evento-error"></span>
+                </div>
+
+                <div class="evento-campo">
+                    <label asp-for="OrganizadorId">Organizador *</label>
+                    <select asp-for="OrganizadorId">
+                        <option value="">— Elige un organizador —</option>
+                        @foreach (var organizador in Model.Organizadores)
+                        {
+                            <option value="@organizador.Id">@organizador.Nombre</option>
+                        }
+                    </select>
+                    <span asp-validation-for="OrganizadorId" class="evento-error"></span>
+                </div>
+
+                <div class="evento-campo">
+                    <label asp-for="Fecha">Fecha y hora *</label>
+                    <input asp-for="Fecha" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" />
+                    <span asp-validation-for="Fecha" class="evento-error"></span>
+                </div>
+
+                <div class="evento-campo">
+                    <label asp-for="Precio">Precio en S/ * <small>(0 = gratuito)</small></label>
+                    <input asp-for="Precio" type="number" min="0" max="10000" step="0.01" inputmode="decimal" />
+                    <span asp-validation-for="Precio" class="evento-error"></span>
+                </div>
+
+                <div class="evento-campo evento-campo-ancho">
+                    <label asp-for="Descripcion">Descripción</label>
+                    <textarea asp-for="Descripcion" rows="4" maxlength="2000" placeholder="¿De qué trata el evento? ¿Dónde será?"></textarea>
+                    <span asp-validation-for="Descripcion" class="evento-error"></span>
+                </div>
+
+                <div class="evento-campo evento-campo-ancho">
+                    <label asp-for="ImagenUrl">URL de la imagen</label>
+                    <input asp-for="ImagenUrl" type="url" maxlength="500" placeholder="https://..." />
+                    <span asp-validation-for="ImagenUrl" class="evento-error"></span>
+                </div>
+
+                <div class="evento-acciones evento-campo-ancho">
+                    <a class="evento-cancelar" asp-action="Panel" asp-controller="Organizador" asp-route-organizadorId="@Model.OrganizadorId">Cancelar</a>
+                    <button type="submit" class="btn-primary">Publicar evento</button>
+                </div>
+            </form>
+        }
+    </section>
+
+    <partial name="_AsistenteCategoria" />
+</section>

@@ -65,3 +65,25 @@
     .organizador-page { gap: 20px; }
     .organizador-stat { padding: 14px; }
 }
+
+/* ═══════════ Crear evento (Administrador General) ═══════════ */
+.organizador-create a.btn-primary { display: inline-block; font-size: 14px; padding: 10px 16px; }
+.organizador-exito { margin: 0; padding: 14px 18px; border-radius: 12px; background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; font-size: 14px; font-weight: 500; }
+.evento-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
+.evento-campo { display: grid; gap: 6px; min-width: 0; }
+.evento-campo-ancho { grid-column: 1 / -1; }
+.evento-campo label { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.evento-campo label small { font-weight: 400; color: var(--text-3); }
+.evento-campo input, .evento-campo select, .evento-campo textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+    background: white; color: var(--text-1); font: inherit; font-size: 14px;
+}
+.evento-campo textarea { resize: vertical; }
+.evento-campo input:focus-visible, .evento-campo select:focus-visible, .evento-campo textarea:focus-visible { outline: 3px solid var(--usmp-red-muted); border-color: var(--usmp-red); }
+.evento-campo .input-validation-error { border-color: var(--usmp-red); }
+.evento-error { color: var(--usmp-red); font-size: 12px; }
+.evento-form-errores ul { margin: 0; padding-left: 18px; color: var(--usmp-red); font-size: 13px; }
+.evento-form-errores.validation-summary-valid { display: none; }
+.evento-acciones { display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
+.evento-cancelar { color: var(--text-2); font-size: 14px; }
+@media (max-width: 700px) { .evento-form { grid-template-columns: 1fr; } }

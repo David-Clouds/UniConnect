@@ -13,6 +13,10 @@
 }
 <link rel="stylesheet" href="~/css/organizador.css" asp-append-version="true" />
 <section class="organizador-page" aria-label="Panel del Organizador" data-organizador-id="@Model.OrganizadorSeleccionadoId">
+    @if (TempData["EventoCreadoMensaje"] is string eventoCreado)
+    {
+        <p class="organizador-exito" role="status">✅ @eventoCreado</p>
+    }
     @if (Model.AccesoDisponible)
     {
         <section class="organizador-surface" aria-label="Selección de organizador">
@@ -59,7 +63,14 @@
     <section class="organizador-surface" aria-labelledby="emisiones-heading">
         <div class="organizador-section-header">
             <div><h2 id="emisiones-heading">Tickets emitidos en los últimos 7 días</h2><p>Cantidad diaria según la fecha de adquisición</p></div>
-            <div class="organizador-create"><button type="button" class="btn-primary" disabled aria-describedby="crear-pendiente">+ Crear evento</button><small id="crear-pendiente">Pendiente de habilitación</small></div>
+            @if (Model.EsAdministradorGeneral)
+            {
+                <div class="organizador-create"><a class="btn-primary" asp-controller="Organizador" asp-action="CrearEvento" asp-route-organizadorId="@Model.OrganizadorSeleccionadoId">+ Crear evento</a></div>
+            }
+            else
+            {
+                <div class="organizador-create"><button type="button" class="btn-primary" disabled aria-describedby="crear-pendiente">+ Crear evento</button><small id="crear-pendiente">Solo el administrador puede crear eventos</small></div>
+            }
         </div>
         @if (!Model.AccesoDisponible)
         {
