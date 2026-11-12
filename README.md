@@ -61,7 +61,7 @@
 - ✅ Diseño **responsive**: en el celular el menú lateral pasa a una barra inferior.
 - ✅ El menú solo muestra el *Panel Organizador* a quien tiene permiso.
 - ✅ El **Administrador General** puede crear eventos desde el Panel Organizador (*+ Crear evento*).
-- ✅ **Chatbot "Uni"** (Claude): botón flotante que recomienda eventos reales, explica cómo conseguir tickets y muestra iniciativas de Join Us. Sin clave responde con reglas simples.
+- ✅ **Chatbot "Uni"** (Google Gemini, plan gratuito): botón flotante que recomienda eventos reales, explica cómo conseguir tickets y muestra iniciativas de Join Us. Sin clave responde con reglas simples.
 
 ---
 
@@ -158,7 +158,7 @@ Cada integración es **opcional**: sin sus claves, la app funciona igual (los ti
 | GET | `/api/buscar?q=` | Búsqueda de eventos e iniciativas (Algolia, o la base de datos como respaldo) |
 | GET | `/api/integraciones` | Estado de CloudAMQP, PieHost y Algolia: configurado, conectado, contadores y último error (sin claves) |
 | POST | `/api/chatbot` | Chatbot: `{ "mensajes": [{ "rol": "user", "texto": "..." }] }` (máx. 10 por minuto por IP) |
-| GET | `/api/chatbot/estado` | Indica si el chatbot usa Claude o reglas |
+| GET | `/api/chatbot/estado` | Indica si el chatbot usa Gemini o reglas |
 
 ---
 
@@ -190,8 +190,8 @@ Las claves **nunca** van en el código ni en GitHub. En tu PC se guardan con *us
 | `Algolia__SearchKey` | Algolia | *Search API Key* (solo lectura) |
 | `Algolia__AdminKey` | Algolia | *Admin API Key* (solo servidor, para indexar) |
 | `Algolia__IndexName` | Algolia | Opcional; por defecto `uniconnect` |
-| `Anthropic__ApiKey` | Claude (chatbot) | [Claude Console](https://platform.claude.com) → *API Keys* (solo servidor) |
-| `Anthropic__Model` | Claude (chatbot) | Opcional; por defecto `claude-opus-5-5` |
+| `Gemini__ApiKey` | Gemini (chatbot) | [Google AI Studio](https://aistudio.google.com/apikey) → *Create API key* (gratis, solo servidor) |
+| `Gemini__Model` | Gemini (chatbot) | Opcional; por defecto `gemini-flash-latest` |
 
 ```bash
 dotnet user-secrets init

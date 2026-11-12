@@ -1,8 +1,8 @@
 using System.Globalization;
+using System.Net.Http.Json;
 using System.Text;
-using Anthropic;
-using Anthropic.Exceptions;
-using Anthropic.Models.Beta.Messages;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using UniConnect.Data;
 
@@ -10,8 +10,8 @@ namespace UniConnect.Services.Chatbot;
 
 /// <summary>
 /// Asistente virtual de UniConnect ("Uni"). Responde preguntas sobre eventos, tickets y Join Us
-/// usando Claude con los datos reales de la base. Es opcional, como las demás integraciones:
-/// sin la clave <c>Anthropic__ApiKey</c> responde con reglas simples a partir de la base.
+/// usando Google Gemini (plan gratuito) con los datos reales de la base. Es opcional, como las demás
+/// integraciones: sin la clave <c>Gemini__ApiKey</c> responde con reglas simples a partir de la base.
 /// </summary>
 public sealed class ServicioChatbot
 {
@@ -21,7 +21,8 @@ public sealed class ServicioChatbot
     private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-PE");
     private static readonly TimeSpan VigenciaCatalogo = TimeSpan.FromMinutes(2);
 
-    private readonly AnthropicClient? _cliente;
+    private readonly HttpClient _http;
+    private readonly string? _clave;
     private readonly string _modelo;
     private readonly IServiceScopeFactory _scopes;
     private readonly ILogger<ServicioChatbot> _logger;
@@ -29,20 +30,24 @@ public sealed class ServicioChatbot
     private readonly SemaphoreSlim _candado = new(1, 1);
     private Catalogo? _catalogo;
 
-    public ServicioChatbot(IConfiguration configuracion, IServiceScopeFactory scopes, ILogger<ServicioChatbot> logger)
+    public ServicioChatbot(IConfiguration configuracion, IHttpClientFactory httpFactory,
+        IServiceScopeFactory scopes, ILogger<ServicioChatbot> logger)
     {
         _scopes = scopes;
         _logger = logger;
-        _modelo = configuracion["Anthropic:Model"] is { Length: > 0 } m ? m : "claude-opus-5-5";
+        _http = httpFactory.CreateClient(nameof(ServicioChatbot));
+        _http.Timeout = TimeSpan.FromSeconds(30);
+        // "gemini-flash-latest" siempre apunta al modelo Flash más reciente de Google.
+        _modelo = configuracion["Gemini:Model"] is { Length: > 0 } m ? m.Trim() : "gemini-flash-latest";
 
-        var clave = configuracion["Anthropic:ApiKey"];
+        var clave = configuracion["Gemini:ApiKey"];
         if (!string.IsNullOrWhiteSpace(clave))
-            _cliente = new AnthropicClient { ApiKey = clave.Trim() };
+            _clave = clave.Trim();
         else
-            _logger.LogInformation("Chatbot: sin Anthropic__ApiKey, se usarán respuestas por reglas.");
+            _logger.LogInformation("Chatbot: sin Gemini__ApiKey, se usarán respuestas por reglas.");
     }
 
-    public bool Configurado => _cliente is not null;
+    public bool Configurado => _clave is not null;
 
     /// <summary>Fuerza a releer eventos e iniciativas en la próxima pregunta (por ejemplo, tras crear un evento).</summary>
     public void InvalidarCatalogo() => _catalogo = null;
@@ -52,70 +57,73 @@ public sealed class ServicioChatbot
         var catalogo = await ObtenerCatalogoAsync(ct);
         var pregunta = mensajes[^1].Texto;
 
-        if (_cliente is null)
+        if (_clave is null)
             return new RespuestaChatbotDto(ResponderPorReglas(pregunta, catalogo), "reglas");
 
         try
         {
-            var texto = await ResponderConClaudeAsync(_cliente, mensajes, catalogo, ct);
+            var texto = await ResponderConGeminiAsync(_clave, mensajes, catalogo, ct);
             if (!string.IsNullOrWhiteSpace(texto))
-                return new RespuestaChatbotDto(texto.Trim(), "claude");
+                return new RespuestaChatbotDto(texto.Trim(), "gemini");
         }
-        catch (AnthropicRateLimitException ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "Chatbot: límite de uso de la API de Claude.");
-        }
-        catch (AnthropicApiException ex)
-        {
-            _logger.LogWarning(ex, "Chatbot: la API de Claude devolvió un error.");
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            _logger.LogWarning(ex, "Chatbot: no se pudo contactar a la API de Claude.");
+            _logger.LogWarning(ex, "Chatbot: no se pudo obtener respuesta de Gemini.");
         }
 
         return new RespuestaChatbotDto(ResponderPorReglas(pregunta, catalogo), "reglas");
     }
 
-    // ═══════════════════════════ Claude ═══════════════════════════
+    // ═══════════════════════════ Gemini (REST) ═══════════════════════════
+    // Documentación: https://ai.google.dev/api/generate-content
 
-    private async Task<string?> ResponderConClaudeAsync(AnthropicClient cliente,
+    private async Task<string?> ResponderConGeminiAsync(string clave,
         IReadOnlyList<MensajeChatbotDto> mensajes, Catalogo catalogo, CancellationToken ct)
     {
-        var historial = new List<BetaMessageParam>();
-        foreach (var m in mensajes)
+        var cuerpo = new GeminiSolicitud(
+            SystemInstruction: new GeminiContenido(null, [new GeminiParte(InstruccionesSistema + "\n\n" + catalogo.Texto)]),
+            Contents: mensajes.Select(m => new GeminiContenido(
+                m.Rol == "assistant" ? "model" : "user", [new GeminiParte(m.Texto)])).ToList(),
+            GenerationConfig: new GeminiConfiguracion(MaxOutputTokens: 2048, Temperature: 0.4));
+
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(_modelo)}:generateContent";
+        using var solicitud = new HttpRequestMessage(HttpMethod.Post, url)
         {
-            if (m.Rol == "assistant") historial.Add(new BetaAssistantMessageParam { Content = m.Texto });
-            else historial.Add(new BetaUserMessageParam { Content = m.Texto });
+            Content = JsonContent.Create(cuerpo, options: OpcionesJson)
+        };
+        // La clave va en una cabecera (no en la URL) para que no aparezca en los logs.
+        solicitud.Headers.Add("x-goog-api-key", clave);
+
+        using var respuesta = await _http.SendAsync(solicitud, ct);
+        if (!respuesta.IsSuccessStatusCode)
+        {
+            var detalle = await respuesta.Content.ReadAsStringAsync(ct);
+            _logger.LogWarning("Chatbot: Gemini respondió {Estado}: {Detalle}", (int)respuesta.StatusCode,
+                detalle.Length > 300 ? detalle[..300] : detalle);
+            return null; // 429 = se acabó la cuota gratuita del minuto/día → se usan las reglas.
         }
 
-        var respuesta = await cliente.Beta.Messages.Create(new MessageCreateParams
-        {
-            Model = _modelo,
-            MaxTokens = 2048,
-            // Chat de respuestas cortas: esfuerzo bajo = más rápido y barato.
-            OutputConfig = new BetaOutputConfig { Effort = Effort.Low },
-            // Si un filtro de seguridad rechaza la consulta, la API la reintenta con otro modelo.
-            Betas = ["server-side-fallback-2026-07-01"],
-            Fallbacks = new Default(),
-            System = new List<BetaTextBlockParam>
-            {
-                new() { Text = InstruccionesSistema, CacheControl = new BetaCacheControlEphemeral() },
-                new() { Text = catalogo.Texto }
-            },
-            Messages = historial
-        }, cancellationToken: ct);
-
-        if (respuesta.StopReason == "refusal")
+        var datos = await respuesta.Content.ReadFromJsonAsync<GeminiRespuesta>(OpcionesJson, ct);
+        var candidato = datos?.Candidates?.FirstOrDefault();
+        if (candidato?.FinishReason is "SAFETY" or "PROHIBITED_CONTENT" or "BLOCKLIST")
             return "Lo siento, no puedo ayudarte con eso. Puedo contarte sobre eventos, tickets o iniciativas de Join Us. 🙂";
 
-        var texto = new StringBuilder();
-        foreach (var bloque in respuesta.Content)
-        {
-            if (bloque.TryPickText(out var t)) texto.Append(t.Text);
-        }
-        return texto.ToString();
+        // Las partes marcadas como "thought" son razonamiento interno del modelo: no se muestran.
+        var partes = candidato?.Content?.Parts?.Where(p => p.Thought != true && !string.IsNullOrEmpty(p.Text));
+        return partes is null ? null : string.Concat(partes.Select(p => p.Text));
     }
+
+    private static readonly JsonSerializerOptions OpcionesJson = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    private sealed record GeminiParte(string? Text, bool? Thought = null);
+    private sealed record GeminiContenido(string? Role, List<GeminiParte>? Parts);
+    private sealed record GeminiConfiguracion(int MaxOutputTokens, double Temperature);
+    private sealed record GeminiSolicitud(GeminiContenido SystemInstruction, List<GeminiContenido> Contents, GeminiConfiguracion GenerationConfig);
+    private sealed record GeminiCandidato(GeminiContenido? Content, string? FinishReason);
+    private sealed record GeminiRespuesta(List<GeminiCandidato>? Candidates);
 
     private const string InstruccionesSistema = """
         Eres "Uni", el asistente virtual de UniConnect, la plataforma de eventos universitarios de la

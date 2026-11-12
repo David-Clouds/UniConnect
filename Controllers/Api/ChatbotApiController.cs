@@ -4,7 +4,7 @@ using UniConnect.Services.Chatbot;
 
 namespace UniConnect.Controllers.Api;
 
-/// <summary>Asistente virtual "Uni" (Claude, o reglas simples si no hay clave configurada).</summary>
+/// <summary>Asistente virtual "Uni" (Google Gemini, o reglas simples si no hay clave configurada).</summary>
 [ApiController]
 [Route("api/chatbot")]
 [Produces("application/json")]
@@ -16,9 +16,9 @@ public class ChatbotApiController : ControllerBase
 
     public ChatbotApiController(ServicioChatbot chatbot) => _chatbot = chatbot;
 
-    // GET /api/chatbot/estado — indica si responde con Claude o con reglas
+    // GET /api/chatbot/estado — indica si responde con Gemini o con reglas
     [HttpGet("estado")]
-    public IActionResult Estado() => Ok(new { motor = _chatbot.Configurado ? "claude" : "reglas" });
+    public IActionResult Estado() => Ok(new { motor = _chatbot.Configurado ? "gemini" : "reglas" });
 
     // POST /api/chatbot   { "mensajes": [ { "rol": "user", "texto": "¿Qué eventos gratis hay?" } ] }
     [HttpPost]

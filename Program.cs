@@ -54,7 +54,8 @@ builder.Services.AddHostedService<ConsumidorTicketsService>();
 builder.Services.AddSingleton<ServicioBusqueda>();
 builder.Services.AddHostedService<IndexacionBusquedaService>();
 
-// Chatbot "Uni" (Claude). Opcional: sin Anthropic__ApiKey responde con reglas simples.
+// Chatbot "Uni" (Google Gemini, plan gratuito). Opcional: sin Gemini__ApiKey responde con reglas simples.
+builder.Services.AddHttpClient();
 builder.Services.AddSingleton<UniConnect.Services.Chatbot.ServicioChatbot>();
 // Límite por IP para que el chatbot no se pueda usar de forma abusiva (cuida el costo de la API).
 builder.Services.AddRateLimiter(opciones =>
